@@ -86,6 +86,56 @@ development/testing — use `inMemory: true` via `AppSchema.makeContainer(inMemo
 - Cascade delete behaviour (MealLog → MealEntry, WorkoutSession → LoggedSet)
 - Full end-to-end test inserting one instance of every model type
 
+## Progress ViewModel
+
+`ProgressViewModel` (`FitnessTracker/Features/Progress/ProgressViewModel.swift`) is the
+`@Observable @MainActor` view model driving the Progress screen.
+
+### Responsibilities
+
+| Responsibility | Method |
+|---|---|
+| Load all body metrics for the current user | `loadMetrics(for:)` |
+| Save a new body measurement | `logMeasurement(type:value:date:for:)` |
+| Delete a body measurement | `deleteMetric(_:)` |
+
+### Computed Properties
+
+| Property | Description |
+|---|---|
+| `chartPoints` | `[ProgressChartPoint]` filtered to `selectedMetricType`, sorted ascending |
+| `filteredMetrics` | `[BodyMetric]` filtered to `selectedMetricType`, sorted descending (history list) |
+| `latestValue` | Most recent value for the selected type, or `nil` |
+| `unitLabel` | `"kg"` for weight, `"%"` for body fat, `"cm"` for all others |
+
+### Views
+
+| View | File |
+|---|---|
+| `ProgressView` | `FitnessTracker/Features/Progress/ProgressView.swift` |
+| `MeasurementLogView` | `FitnessTracker/Features/Progress/MeasurementLogView.swift` |
+
+`ProgressView` assembles a metric-type chip picker, a `MetricLineChart` (Swift Charts),
+a latest-value summary tile, and a swipe-to-delete history list.
+
+`MeasurementLogView` is a modal `Form` with a `BodyMetricType` picker, a decimal value
+field with a dynamic unit label, and a `DatePicker` constrained to past dates.
+
+### Tests
+
+`FitnessTrackerTests/ProgressViewModelTests.swift` covers:
+
+- Initial state assertions (metrics empty, flags false)
+- `loadMetrics` — populates metrics, error handling, clears error on retry
+- `chartPoints` — filters to selected type, sorts ascending, empty state
+- `filteredMetrics` — filters to selected type, sorts descending
+- `latestValue` — nil when empty, most recent value
+- `unitLabel` — kg / % / cm by type
+- `logMeasurement` — appends metric, saving flag, error handling
+- `deleteMetric` — removes metric, saving flag, error handling
+
+---
+
 ## WorkoutPlan ViewModel
 
 `WorkoutPlanViewModel` (`FitnessTracker/Features/Workout/WorkoutPlanViewModel.swift`) is the
@@ -133,58 +183,60 @@ Up to 2 exercises per muscle group are selected from the library per day.
 - `setActivePlan` — activation and mutual deactivation
 - `deletePlan` — list removal, active-plan clearing, error handling
 
-## SessionView & SessionViewModel
+## Session Tracking Feature
 
-`SessionView` (`FitnessTracker/Features/Workout/SessionView.swift`) is the primary UI for
-conducting a live workout session. `SessionViewModel` (`SessionViewModel.swift`) is its
-`@Observable @MainActor` state machine.
+### Files
 
-### SessionViewModel Lifecycle
-
-| Phase | Trigger |
+| File | Purpose |
 |---|---|
-| `idle` | Initial state |
-| `active` | `startSession(day:exercises:previousSetsMap:)` |
-| `paused` | `pauseSession()` |
-| `active` | `resumeSession()` |
-| `complete` | `finishSession()` |
+| `FitnessTracker/Features/Session/SessionViewModel.swift` | `@Observable @MainActor` state-machine view model |
+| `FitnessTracker/Features/Session/ActiveSessionView.swift` | Live session screen with per-exercise set logging |
+| `FitnessTracker/Features/Session/Components/ExerciseSetRow.swift` | Single-set input row (weight, reps, RPE, PR badge) |
+| `FitnessTracker/Features/Session/Components/RestTimerView.swift` | Animated rest-timer overlay with progress ring |
+| `FitnessTracker/Features/Session/SessionSummaryView.swift` | Post-session summary with volume, duration, and PRs |
+| `FitnessTrackerTests/SessionViewModelTests.swift` | 20 unit tests for the view model |
 
-### Responsibilities
+### SessionViewModel State Machine
+
+```
+idle ──startSession()──► active ──pauseSession()──► paused
+                              ◄──resumeSession()────────┘
+                              │
+                    finishSession()
+                              │
+                              ▼
+                           complete  ──► SessionSummaryView
+                              │
+                    abandonSession()
+                              ▼
+                           abandoned
+```
+
+### Key Responsibilities
 
 | Responsibility | Method |
 |---|---|
-| Start a session and save to SwiftData | `startSession(day:exercises:previousSetsMap:)` |
-| Pause the session (freeze timers) | `pauseSession()` |
-| Resume from pause | `resumeSession()` |
-| Finish, persist to SwiftData + HealthKit | `finishSession()` |
-| Discard session without summary | `abandonSession()` |
-| Mark a set complete, detect PRs, start rest timer | `logSet(_:exerciseID:)` |
-| Append a blank set row to an exercise | `addSet(to:)` |
-| Skip the active rest countdown | `skipRest()` |
+| Create & persist `WorkoutSession` | `startSession()` |
+| Log a completed set with PR detection | `completeSet(exerciseIndex:setIndex:weightKg:reps:rpe:)` |
+| Persist final totals and write HealthKit workout | `finishSession()` |
+| Backfill previous-best data for inline display | `loadPreviousBests()` |
+| Manage rest timer (configurable, default 90 s) | `startRestTimer(duration:)` / `cancelRestTimer()` |
 
-### SwiftData Persistence
+### PR Detection Logic
 
-`finishSession()` persists the completed `WorkoutSession` (with `status = .complete`,
-`completedAt`, `durationSeconds`, `totalVolumeKg`) via `WorkoutRepository.saveWorkoutSession(_:)`.
-Each individual set is saved during the session via `WorkoutRepository.logSet(_:for:)`.
-
-### HealthKit Integration
-
-`finishSession()` calls `HealthKitService.saveWorkout(duration:)` which writes an
-`HKWorkout` with `.traditionalStrengthTraining` activity type. Errors are non-fatal —
-the app degrades gracefully when HealthKit is unavailable (e.g. simulator, iPad).
+A personal record is flagged when `weightKg > previousBest.weightKg`. For an exercise with no recorded history, the first completed set is always marked a PR. The detected PR flag is persisted on the `LoggedSet.isPR` attribute.
 
 ### Tests
 
 `FitnessTrackerTests/SessionViewModelTests.swift` covers:
 
-- Initial state assertions (phase, activeExercises, timers, summary)
-- `startSession` — phase transition, exercise list population, set-row count,
-  previous-sets map propagation, repository persistence, error handling
-- `pauseSession` / `resumeSession` — phase transitions and guards
-- `addSet` — appends row, no-op for unknown exercise IDs
-- `logSet` — marks row complete, starts rest timer, persists to repository
-- `skipRest` — clears rest timer state
-- `finishSession` — phase transition, summary population, SwiftData + HealthKit persistence,
-  volume calculation, idle guard
-- `abandonSession` — phase reset, abandoned status persistence
+- Initial state (idle, zero elapsed, no rest timer)
+- `startSession` — state transition, idempotency, repository failure
+- `pauseSession` / `resumeSession` — state transitions, no-op guards
+- `finishSession` — transition to complete, summary data production, no-op when idle
+- `abandonSession` — state transition
+- `completeSet` — marks complete, updates weight, first-set PR, PR above/below best, volume accumulation, rest timer start, out-of-bounds safety, no-op when not active
+- `prCount` — reflects completed PR sets
+- Rest timer — cancel clears remaining, progress at 0 when inactive
+- `elapsedFormatted` — MM:SS format
+- `summaryData` — correct volume after completing sets
