@@ -69,6 +69,7 @@ final class HealthKitServiceTests: XCTestCase {
 
 // MARK: - DashboardViewModelTests
 
+@MainActor
 final class DashboardViewModelTests: XCTestCase {
 
     // MARK: - Properties
