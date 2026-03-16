@@ -4,14 +4,20 @@
   "testsPass": true,
   "filesChanged": [
     "FitnessTracker/Features/Dashboard/DashboardViewModel.swift",
+    "FitnessTracker/Features/Dashboard/DashboardView.swift",
+    "FitnessTracker/Features/Dashboard/WeeklySummaryCard.swift",
+    "FitnessTracker/Features/Workout/ExerciseLibraryView.swift",
+    "FitnessTracker/Features/Workout/ExerciseDetailView.swift",
     "FitnessTrackerTests/DashboardViewModelTests.swift",
+    "FitnessTrackerTests/ExerciseLibraryViewTests.swift",
     "FitnessTrackerTests/HealthKitServiceTests.swift"
   ],
   "docsUpdated": [],
   "docsReviewed": [
     "docs/concepts/ios-fitness-tracker-app/LLD.md",
     "docs/concepts/ios-fitness-tracker-app/HLD.md",
-    "docs/swiftdata-models.md"
+    "docs/swiftdata-models.md",
+    "README.md"
   ],
   "completedTasks": [1, 2, 3, 4]
 }

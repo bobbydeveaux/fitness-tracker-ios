@@ -85,3 +85,50 @@ development/testing — use `inMemory: true` via `AppSchema.makeContainer(inMemo
 - Insert + fetch for all 12 model types
 - Cascade delete behaviour (MealLog → MealEntry, WorkoutSession → LoggedSet)
 - Full end-to-end test inserting one instance of every model type
+
+## WorkoutPlan ViewModel
+
+`WorkoutPlanViewModel` (`FitnessTracker/Features/Workout/WorkoutPlanViewModel.swift`) is the
+`@Observable @MainActor` view model driving the Workout Plan screen.
+
+### Responsibilities
+
+| Responsibility | Method |
+|---|---|
+| Load all plans from persistence | `loadPlans()` |
+| Generate a new plan from the exercise library | `generatePlan(splitType:daysPerWeek:goal:)` |
+| Switch the active plan | `setActivePlan(_:)` |
+| Delete a plan (cascade-deletes days + exercises) | `deletePlan(_:)` |
+
+### Plan Generation Logic
+
+`generatePlan` fetches the seeded exercise library via `WorkoutRepository.fetchExercises()`,
+then builds `WorkoutDay` + `PlannedExercise` objects according to the chosen split:
+
+| Split | Day cycle |
+|---|---|
+| Push/Pull/Legs | Push → Pull → Legs (cycled to fill `daysPerWeek`) |
+| Upper/Lower | Upper A → Lower A → Upper B → Lower B (cycled) |
+| Full Body | Full Body A/B/C… repeated |
+
+**Rep/set prescription by goal:**
+
+| Goal | Sets | Reps | RPE |
+|---|---|---|---|
+| `cut` | 4 | 12–15 | 7.0 |
+| `maintain` | 3 | 8–12 | 7.5 |
+| `bulk` | 4 | 6–8 | 8.0 |
+
+Up to 2 exercises per muscle group are selected from the library per day.
+`WorkoutDay.weekdayIndex` is assigned by a fixed schedule (Mon/Wed/Fri for 3 days, etc.).
+
+### Tests
+
+`FitnessTrackerTests/WorkoutPlanViewModelTests.swift` covers:
+
+- Initial state assertions
+- `loadPlans` — empty repo, populated repo, active plan identification, error handling
+- `generatePlan` — correct day count, day labels per split, prescription per goal,
+  deactivation of previous plan, empty library fallback, weekday index assignment
+- `setActivePlan` — activation and mutual deactivation
+- `deletePlan` — list removal, active-plan clearing, error handling

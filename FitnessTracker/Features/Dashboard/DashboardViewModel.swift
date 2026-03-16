@@ -37,8 +37,9 @@ struct DashboardState {
 /// ViewModel for the Dashboard feature screen.
 ///
 /// Aggregates today's HealthKit statistics (step count, active energy,
-/// heart rate), today's consumed nutrition macros, and the user's activity
-/// streak into a single observable `DashboardState`.
+/// heart rate), today's consumed nutrition macros, the user's activity
+/// streak, and the trailing 7-day activity window into observable state
+/// that `DashboardView` binds to.
 ///
 /// Usage in a SwiftUI view:
 /// ```swift
@@ -62,6 +63,9 @@ final class DashboardViewModel {
     /// The current aggregated dashboard state. Starts with zeroed values.
     private(set) var state: DashboardState = DashboardState()
 
+    /// Aggregated metrics for the trailing 7-day window.
+    var weeklyStats: WeeklyStats = WeeklyStats()
+
     /// `true` while any data source query is in flight.
     private(set) var isLoading: Bool = false
 
@@ -81,6 +85,7 @@ final class DashboardViewModel {
     private let healthKitService: any HealthKitServiceProtocol
     private let nutritionRepository: (any NutritionRepository)?
     private let progressRepository: (any ProgressRepository)?
+    private let workoutRepository: (any WorkoutRepository)?
 
     // MARK: - Init
 
@@ -89,18 +94,22 @@ final class DashboardViewModel {
     /// - Parameters:
     ///   - healthKitService: Defaults to the shared singleton; inject a mock conforming
     ///     to `HealthKitServiceProtocol` in tests or previews.
-    ///   - nutritionRepository: When provided, today's macro totals are loaded and
-    ///     included in `state`. Pass `nil` to skip nutrition aggregation.
+    ///   - nutritionRepository: When provided, today's macro totals and weekly caloric
+    ///     averages are loaded. Pass `nil` to skip nutrition aggregation.
     ///   - progressRepository: When provided, the user's streak is loaded and included
     ///     in `state`. Pass `nil` to skip streak aggregation.
+    ///   - workoutRepository: When provided, weekly completed session count is loaded.
+    ///     Pass `nil` to skip workout aggregation.
     init(
         healthKitService: any HealthKitServiceProtocol = HealthKitService.shared,
         nutritionRepository: (any NutritionRepository)? = nil,
-        progressRepository: (any ProgressRepository)? = nil
+        progressRepository: (any ProgressRepository)? = nil,
+        workoutRepository: (any WorkoutRepository)? = nil
     ) {
         self.healthKitService = healthKitService
         self.nutritionRepository = nutritionRepository
         self.progressRepository = progressRepository
+        self.workoutRepository = workoutRepository
     }
 
     // MARK: - Actions
@@ -134,15 +143,47 @@ final class DashboardViewModel {
         )
     }
 
+    /// Loads all dashboard data concurrently: HealthKit stats and weekly aggregates.
+    func loadAll() async {
+        isLoading = true
+        defer { isLoading = false }
+        async let statsTask: Void = loadDailyStats()
+        async let weeklyTask: Void = loadWeeklyStats()
+        _ = await (statsTask, weeklyTask)
+    }
+
     /// Fetches only HealthKit statistics and updates `state.dailyStats`.
     ///
     /// Use this as a lightweight refresh when only step/energy/heart-rate
     /// data needs to be updated without reloading nutrition or streak data.
     func loadDailyStats() async {
-        isLoading = true
-        defer { isLoading = false }
         let stats = await healthKitService.readDailyStats()
         state.dailyStats = stats
+        // Mirror HealthKit values into weeklyStats for at-a-glance display.
+        weeklyStats.todaySteps = stats.stepCount
+        weeklyStats.todayActiveEnergyKcal = stats.activeEnergyBurned
+    }
+
+    /// Queries the nutrition and workout repositories for trailing-7-day aggregates
+    /// and updates `weeklyStats`.
+    func loadWeeklyStats() async {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: .now)
+        guard let sevenDaysAgo = calendar.date(byAdding: .day, value: -6, to: today) else { return }
+
+        // Fetch concurrently; ignore individual failures — partial data is fine.
+        async let mealLogsTask = fetchMealLogs(from: sevenDaysAgo, to: today)
+        async let sessionsTask = fetchCompletedSessions(from: sevenDaysAgo, to: today)
+
+        let (mealLogs, sessionCount) = await (mealLogsTask, sessionsTask)
+
+        weeklyStats.completedWorkouts = sessionCount
+
+        // Compute average daily kcal over the 7-day window.
+        let totalKcal = mealLogs
+            .flatMap(\.entries)
+            .reduce(0.0) { $0 + $1.kcal }
+        weeklyStats.avgDailyKcal = totalKcal / 7.0
     }
 
     // MARK: - Private Helpers
@@ -192,6 +233,25 @@ final class DashboardViewModel {
         } catch {
             errorMessage = error.localizedDescription
             return StreakCounts()
+        }
+    }
+
+    private func fetchMealLogs(from start: Date, to end: Date) async -> [MealLog] {
+        guard let repo = nutritionRepository else { return [] }
+        do {
+            return try await repo.fetchMealLogs(from: start, to: end)
+        } catch {
+            return []
+        }
+    }
+
+    private func fetchCompletedSessions(from start: Date, to end: Date) async -> Int {
+        guard let repo = workoutRepository else { return 0 }
+        do {
+            let sessions = try await repo.fetchWorkoutSessions(from: start, to: end)
+            return sessions.filter { $0.status == .complete }.count
+        } catch {
+            return 0
         }
     }
 }
