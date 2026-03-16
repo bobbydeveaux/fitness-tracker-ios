@@ -1,6 +1,6 @@
 ## Code Review - Changes Requested
 
-The review is complete. The PR is blocked because **no implementation exists** — it's an empty WIP branch with zero code changes. The review JSON has been written to `/workspace/.claude-review.json` with `changes_requested` and `hasBlockingIssues: true`.
+Review complete. The PR has **no code changes** — it's a draft WIP placeholder with 0 additions/deletions. The required `PRDetector.swift` implementation and tests are entirely absent. I've marked it as `changes_requested` with `hasBlockingIssues: true` since there's literally nothing to merge.
 
 **Action Required**: Please address the blocking issues above before merging.
 
