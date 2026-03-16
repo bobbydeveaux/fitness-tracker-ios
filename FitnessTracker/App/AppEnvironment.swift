@@ -28,7 +28,8 @@ import SwiftData
 ///        ├─ ExerciseLibraryService      (in-memory JSON cache)
 ///        ├─ KeychainService             (Security framework wrapper)
 ///        ├─ HealthKitService            (HKHealthStore wrapper)
-///        └─ NotificationScheduler       (UNUserNotificationCenter wrapper)
+///        ├─ NotificationScheduler       (UNUserNotificationCenter wrapper)
+///        └─ CloudSyncService            (CloudKit availability & sync-state monitor)
 /// ```
 @Observable
 final class AppEnvironment {
@@ -68,6 +69,9 @@ final class AppEnvironment {
     /// Wraps `UNUserNotificationCenter` for scheduling workout-reminder notifications.
     let notificationScheduler: any NotificationSchedulerProtocol
 
+    /// Monitors CloudKit sync state and exposes the iCloud availability toggle.
+    let cloudSyncService: any CloudSyncServiceProtocol
+
     // MARK: - Init
 
     /// Memberwise initialiser used for production setup and for injecting test doubles.
@@ -82,6 +86,7 @@ final class AppEnvironment {
     ///   - keychainService: Service for Keychain access.
     ///   - healthKitService: Service for HealthKit access.
     ///   - notificationScheduler: Service for scheduling workout-reminder notifications.
+    ///   - cloudSyncService: Service for CloudKit sync monitoring and toggle.
     init(
         modelContainer: ModelContainer,
         userProfileRepository: any UserProfileRepository,
@@ -91,7 +96,8 @@ final class AppEnvironment {
         exerciseLibraryService: ExerciseLibraryService = ExerciseLibraryService(),
         keychainService: KeychainService = KeychainService(),
         healthKitService: any HealthKitServiceProtocol = HealthKitService.shared,
-        notificationScheduler: any NotificationSchedulerProtocol = NotificationScheduler.shared
+        notificationScheduler: any NotificationSchedulerProtocol = NotificationScheduler.shared,
+        cloudSyncService: any CloudSyncServiceProtocol = CloudSyncService()
     ) {
         self.modelContainer = modelContainer
         self.userProfileRepository = userProfileRepository
@@ -102,6 +108,7 @@ final class AppEnvironment {
         self.keychainService = keychainService
         self.healthKitService = healthKitService
         self.notificationScheduler = notificationScheduler
+        self.cloudSyncService = cloudSyncService
     }
 }
 
@@ -123,7 +130,8 @@ extension AppEnvironment {
             nutritionRepository: SwiftDataNutritionRepository(context: context),
             workoutRepository: SwiftDataWorkoutRepository(context: context),
             progressRepository: SwiftDataProgressRepository(context: context),
-            exerciseLibraryService: ExerciseLibraryService(modelContainer: container)
+            exerciseLibraryService: ExerciseLibraryService(modelContainer: container),
+            cloudSyncService: CloudSyncService()
         )
     }
 

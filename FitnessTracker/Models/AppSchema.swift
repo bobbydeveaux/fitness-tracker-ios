@@ -20,6 +20,8 @@ enum AppSchema {
         FoodItem.self,
         MealLog.self,
         MealEntry.self,
+        MealTemplate.self,
+        MealTemplateItem.self,
         Exercise.self,
         WorkoutPlan.self,
         WorkoutDay.self,
