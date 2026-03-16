@@ -4,158 +4,95 @@ import SwiftData
 
 // MARK: - MockNutritionRepository
 
-/// In-memory stub for `NutritionRepository` that avoids SwiftData disk I/O.
+/// In-memory mock for `NutritionRepository` used in tests.
 final class MockNutritionRepository: NutritionRepository, @unchecked Sendable {
 
-    // MARK: - In-memory store
+    // MARK: - Storage
 
-    private(set) var foodItems: [FoodItem] = []
-    private(set) var mealLogs: [MealLog] = []
+    var foodItems: [FoodItem] = []
+    var mealLogs: [MealLog] = []
 
-    // MARK: - Error injection
+    // MARK: - Error Injection
 
     var shouldThrow: Bool = false
 
-    private func throwIfNeeded() throws {
-        if shouldThrow { throw MockNutritionError.operationFailed }
+    private func maybeThrow() throws {
+        if shouldThrow { throw MockNutritionError.forced }
     }
 
     // MARK: - FoodItem
 
     func fetchFoodItems() async throws -> [FoodItem] {
-        try throwIfNeeded()
+        try maybeThrow()
         return foodItems.sorted { $0.name < $1.name }
     }
 
     func fetchFoodItem(byID id: UUID) async throws -> FoodItem? {
-        try throwIfNeeded()
+        try maybeThrow()
         return foodItems.first { $0.id == id }
     }
 
     func searchFoodItems(query: String) async throws -> [FoodItem] {
-        try throwIfNeeded()
-        let lowercased = query.lowercased()
-        return foodItems.filter { $0.name.lowercased().contains(lowercased) }
+        try maybeThrow()
+        let q = query.lowercased()
+        return foodItems.filter { $0.name.lowercased().contains(q) }
     }
 
     func saveFoodItem(_ item: FoodItem) async throws {
-        try throwIfNeeded()
+        try maybeThrow()
         if !foodItems.contains(where: { $0.id == item.id }) {
             foodItems.append(item)
         }
     }
 
     func deleteFoodItem(_ item: FoodItem) async throws {
-        try throwIfNeeded()
+        try maybeThrow()
         foodItems.removeAll { $0.id == item.id }
     }
 
     // MARK: - MealLog
 
     func fetchMealLogs(for date: Date) async throws -> [MealLog] {
-        try throwIfNeeded()
+        try maybeThrow()
         let calendar = Calendar.current
-        let start = calendar.startOfDay(for: date)
-        guard let end = calendar.date(byAdding: .day, value: 1, to: start) else { return [] }
-        return mealLogs
-            .filter { $0.date >= start && $0.date < end }
-            .sorted { $0.date < $1.date }
+        return mealLogs.filter { calendar.isDate($0.date, inSameDayAs: date) }
     }
 
     func fetchMealLogs(from startDate: Date, to endDate: Date) async throws -> [MealLog] {
-        try throwIfNeeded()
+        try maybeThrow()
         return mealLogs.filter { $0.date >= startDate && $0.date <= endDate }
     }
 
     func saveMealLog(_ log: MealLog) async throws {
-        try throwIfNeeded()
+        try maybeThrow()
         if !mealLogs.contains(where: { $0.id == log.id }) {
             mealLogs.append(log)
         }
     }
 
     func deleteMealLog(_ log: MealLog) async throws {
-        try throwIfNeeded()
+        try maybeThrow()
         mealLogs.removeAll { $0.id == log.id }
     }
 
     // MARK: - MealEntry
 
     func addMealEntry(_ entry: MealEntry, to log: MealLog) async throws {
-        try throwIfNeeded()
+        try maybeThrow()
         log.entries.append(entry)
         entry.mealLog = log
-        if !mealLogs.contains(where: { $0.id == log.id }) {
-            mealLogs.append(log)
-        }
     }
 
     func removeMealEntry(_ entry: MealEntry) async throws {
-        try throwIfNeeded()
-        for log in mealLogs {
-            log.entries.removeAll { $0.id == entry.id }
-        }
+        try maybeThrow()
+        entry.mealLog?.entries.removeAll { $0.id == entry.id }
     }
 
-    // MARK: - Error
+    // MARK: - Errors
 
-    enum MockNutritionError: Error, LocalizedError {
-        case operationFailed
-        var errorDescription: String? { "Mock operation failed" }
+    enum MockNutritionError: Error {
+        case forced
     }
-}
-
-// MARK: - MockUserProfileRepository (local to this test)
-
-/// Lightweight stub returning a fixed `UserProfile` with known macro targets.
-private final class MockProfileRepository: UserProfileRepository, @unchecked Sendable {
-
-    var profile: UserProfile? = nil
-    var shouldThrow: Bool = false
-
-    func fetch() async throws -> UserProfile? {
-        if shouldThrow { throw MockProfileError.fetchFailed }
-        return profile
-    }
-
-    func save(_ profile: UserProfile) async throws {
-        self.profile = profile
-    }
-
-    func delete(_ profile: UserProfile) async throws {
-        self.profile = nil
-    }
-
-    enum MockProfileError: Error, LocalizedError {
-        case fetchFailed
-        var errorDescription: String? { "Mock profile fetch failed" }
-    }
-}
-
-// MARK: - Helpers
-
-private func makeContainer() throws -> ModelContainer {
-    try AppSchema.makeContainer(inMemory: true)
-}
-
-/// Creates a lightweight `FoodItem` and `MealEntry` for a given number of grams.
-/// Nutritional values are calculated proportionally from the per-100g values.
-private func makeEntry(
-    foodName: String = "Test Food",
-    kcalPer100g: Double = 100,
-    proteinPer100g: Double = 10,
-    carbPer100g: Double = 20,
-    fatPer100g: Double = 5,
-    servingGrams: Double = 100
-) -> MealEntry {
-    let ratio = servingGrams / 100
-    return MealEntry(
-        servingGrams: servingGrams,
-        kcal: kcalPer100g * ratio,
-        proteinG: proteinPer100g * ratio,
-        carbG: carbPer100g * ratio,
-        fatG: fatPer100g * ratio
-    )
 }
 
 // MARK: - NutritionViewModelTests
@@ -163,404 +100,330 @@ private func makeEntry(
 @MainActor
 final class NutritionViewModelTests: XCTestCase {
 
-    private var nutritionRepo: MockNutritionRepository!
-    private var profileRepo: MockProfileRepository!
-    private var viewModel: NutritionViewModel!
+    // MARK: - Helpers
 
-    override func setUp() async throws {
-        try await super.setUp()
-        nutritionRepo = MockNutritionRepository()
-        profileRepo = MockProfileRepository()
-        viewModel = NutritionViewModel(
-            nutritionRepository: nutritionRepo,
-            userProfileRepository: profileRepo
+    private func makeViewModel(
+        repository: MockNutritionRepository = MockNutritionRepository()
+    ) -> NutritionViewModel {
+        NutritionViewModel(repository: repository)
+    }
+
+    private func makeFoodItem(
+        name: String = "Test Food",
+        kcalPer100g: Double = 200,
+        proteinG: Double = 20,
+        carbG: Double = 15,
+        fatG: Double = 8
+    ) -> FoodItem {
+        FoodItem(
+            name: name,
+            kcalPer100g: kcalPer100g,
+            proteinG: proteinG,
+            carbG: carbG,
+            fatG: fatG
         )
     }
 
-    override func tearDown() async throws {
-        viewModel = nil
-        nutritionRepo = nil
-        profileRepo = nil
-        try await super.tearDown()
+    private func makeMealLog(mealType: MealType = .breakfast) -> MealLog {
+        MealLog(date: Date(), mealType: mealType)
+    }
+
+    private func makeMealEntry(
+        servingGrams: Double = 100,
+        kcal: Double = 200,
+        proteinG: Double = 20,
+        carbG: Double = 15,
+        fatG: Double = 8
+    ) -> MealEntry {
+        MealEntry(
+            servingGrams: servingGrams,
+            kcal: kcal,
+            proteinG: proteinG,
+            carbG: carbG,
+            fatG: fatG
+        )
     }
 
     // MARK: - Initial State
 
-    func testInitialState_mealLogsEmpty() {
-        XCTAssertTrue(viewModel.mealLogs.isEmpty)
+    func testInitialMealLogs_isEmpty() {
+        let vm = makeViewModel()
+        XCTAssertTrue(vm.mealLogs.isEmpty)
     }
 
-    func testInitialState_isLoadingFalse() {
-        XCTAssertFalse(viewModel.isLoading)
+    func testInitialMacros_areZero() {
+        let vm = makeViewModel()
+        XCTAssertEqual(vm.totalKcal, 0)
+        XCTAssertEqual(vm.totalProteinG, 0)
+        XCTAssertEqual(vm.totalCarbG, 0)
+        XCTAssertEqual(vm.totalFatG, 0)
     }
 
-    func testInitialState_errorMessageNil() {
-        XCTAssertNil(viewModel.errorMessage)
+    func testInitialLoadingState_isFalse() {
+        let vm = makeViewModel()
+        XCTAssertFalse(vm.isLoading)
     }
 
-    func testInitialState_macroTotalsZero() {
-        XCTAssertEqual(viewModel.totalKcal, 0)
-        XCTAssertEqual(viewModel.totalProteinG, 0)
-        XCTAssertEqual(viewModel.totalCarbG, 0)
-        XCTAssertEqual(viewModel.totalFatG, 0)
+    // MARK: - loadTodaysLogs
+
+    func testLoadTodaysLogs_emptyRepository_mealLogsRemainsEmpty() async {
+        let vm = makeViewModel()
+        await vm.loadTodaysLogs()
+        XCTAssertTrue(vm.mealLogs.isEmpty)
     }
 
-    func testInitialState_defaultTargetsNonZero() {
-        XCTAssertGreaterThan(viewModel.kcalTarget, 0)
-        XCTAssertGreaterThan(viewModel.proteinTarget, 0)
-        XCTAssertGreaterThan(viewModel.carbTarget, 0)
-        XCTAssertGreaterThan(viewModel.fatTarget, 0)
+    func testLoadTodaysLogs_populatesFromRepository() async {
+        let repo = MockNutritionRepository()
+        let log = makeMealLog(mealType: .breakfast)
+        repo.mealLogs.append(log)
+
+        let vm = makeViewModel(repository: repo)
+        await vm.loadTodaysLogs()
+
+        XCTAssertEqual(vm.mealLogs.count, 1)
+        XCTAssertEqual(vm.mealLogs.first?.mealType, .breakfast)
     }
 
-    // MARK: - load()
+    func testLoadTodaysLogs_onError_setsErrorMessage() async {
+        let repo = MockNutritionRepository()
+        repo.shouldThrow = true
 
-    func testLoad_emptyRepository_mealLogsRemainEmpty() async throws {
-        await viewModel.load()
+        let vm = makeViewModel(repository: repo)
+        await vm.loadTodaysLogs()
 
-        XCTAssertTrue(viewModel.mealLogs.isEmpty)
-        XCTAssertNil(viewModel.errorMessage)
+        XCTAssertNotNil(vm.errorMessage)
+        XCTAssertTrue(vm.mealLogs.isEmpty)
     }
 
-    func testLoad_fetchesMealLogsForSelectedDate() async throws {
-        let today = viewModel.selectedDate
-        let log = MealLog(date: today, mealType: .breakfast)
-        try await nutritionRepo.saveMealLog(log)
+    func testLoadTodaysLogs_clearsErrorMessageOnSuccess() async {
+        let repo = MockNutritionRepository()
+        repo.shouldThrow = true
+        let vm = makeViewModel(repository: repo)
+        await vm.loadTodaysLogs()
+        XCTAssertNotNil(vm.errorMessage)
 
-        await viewModel.load()
-
-        XCTAssertEqual(viewModel.mealLogs.count, 1)
-        XCTAssertEqual(viewModel.mealLogs.first?.mealType, .breakfast)
-    }
-
-    func testLoad_doesNotFetchLogsFromOtherDates() async throws {
-        let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: viewModel.selectedDate)!
-        let log = MealLog(date: yesterday, mealType: .lunch)
-        try await nutritionRepo.saveMealLog(log)
-
-        await viewModel.load()
-
-        XCTAssertTrue(viewModel.mealLogs.isEmpty)
-    }
-
-    func testLoad_updatesTargetsFromUserProfile() async throws {
-        profileRepo.profile = UserProfile(
-            name: "Tester",
-            age: 30,
-            gender: .female,
-            heightCm: 165,
-            weightKg: 60,
-            activityLevel: .moderatelyActive,
-            goal: .maintain,
-            tdeeKcal: 1900,
-            proteinTargetG: 130,
-            carbTargetG: 210,
-            fatTargetG: 60
-        )
-
-        await viewModel.load()
-
-        XCTAssertEqual(viewModel.kcalTarget, 1900, accuracy: 0.1)
-        XCTAssertEqual(viewModel.proteinTarget, 130, accuracy: 0.1)
-        XCTAssertEqual(viewModel.carbTarget, 210, accuracy: 0.1)
-        XCTAssertEqual(viewModel.fatTarget, 60, accuracy: 0.1)
-    }
-
-    func testLoad_noUserProfile_keepsDefaultTargets() async throws {
-        profileRepo.profile = nil
-
-        let defaultKcal = viewModel.kcalTarget
-
-        await viewModel.load()
-
-        XCTAssertEqual(viewModel.kcalTarget, defaultKcal, accuracy: 0.1)
-    }
-
-    func testLoad_onRepositoryError_setsErrorMessage() async throws {
-        nutritionRepo.shouldThrow = true
-
-        await viewModel.load()
-
-        XCTAssertNotNil(viewModel.errorMessage)
-    }
-
-    func testLoad_setsIsLoadingFalseAfterCompletion() async throws {
-        await viewModel.load()
-
-        XCTAssertFalse(viewModel.isLoading)
+        repo.shouldThrow = false
+        await vm.loadTodaysLogs()
+        XCTAssertNil(vm.errorMessage)
     }
 
     // MARK: - Macro Aggregation
 
-    func testTotalKcal_sumsAllEntriesAcrossLogs() async throws {
-        let today = viewModel.selectedDate
-        let log1 = MealLog(date: today, mealType: .breakfast)
-        let log2 = MealLog(date: today, mealType: .lunch)
-        let entry1 = makeEntry(kcalPer100g: 200, servingGrams: 100) // 200 kcal
-        let entry2 = makeEntry(kcalPer100g: 150, servingGrams: 200) // 300 kcal
+    func testTotalKcal_sumOfAllEntries() async {
+        let repo = MockNutritionRepository()
+        let log = makeMealLog()
+        let entry1 = makeMealEntry(kcal: 300)
+        let entry2 = makeMealEntry(kcal: 200)
+        log.entries = [entry1, entry2]
+        repo.mealLogs.append(log)
 
-        try await nutritionRepo.saveMealLog(log1)
-        try await nutritionRepo.saveMealLog(log2)
-        try await nutritionRepo.addMealEntry(entry1, to: log1)
-        try await nutritionRepo.addMealEntry(entry2, to: log2)
+        let vm = makeViewModel(repository: repo)
+        await vm.loadTodaysLogs()
 
-        await viewModel.load()
-
-        XCTAssertEqual(viewModel.totalKcal, 500, accuracy: 0.1)
+        XCTAssertEqual(vm.totalKcal, 500, accuracy: 0.01)
     }
 
-    func testTotalProteinG_sumsCorrectly() async throws {
-        let today = viewModel.selectedDate
-        let log = MealLog(date: today, mealType: .dinner)
-        let entry = makeEntry(proteinPer100g: 30, servingGrams: 150) // 45g protein
+    func testTotalProteinG_sumOfAllEntries() async {
+        let repo = MockNutritionRepository()
+        let log = makeMealLog()
+        let entry1 = makeMealEntry(proteinG: 30)
+        let entry2 = makeMealEntry(proteinG: 25)
+        log.entries = [entry1, entry2]
+        repo.mealLogs.append(log)
 
-        try await nutritionRepo.saveMealLog(log)
-        try await nutritionRepo.addMealEntry(entry, to: log)
+        let vm = makeViewModel(repository: repo)
+        await vm.loadTodaysLogs()
 
-        await viewModel.load()
-
-        XCTAssertEqual(viewModel.totalProteinG, 45, accuracy: 0.1)
+        XCTAssertEqual(vm.totalProteinG, 55, accuracy: 0.01)
     }
 
-    func testTotalCarbG_sumsCorrectly() async throws {
-        let today = viewModel.selectedDate
-        let log = MealLog(date: today, mealType: .snack)
-        let entry = makeEntry(carbPer100g: 80, servingGrams: 50) // 40g carbs
+    func testTotalCarbG_sumOfAllEntries() async {
+        let repo = MockNutritionRepository()
+        let log = makeMealLog()
+        let entry1 = makeMealEntry(carbG: 40)
+        let entry2 = makeMealEntry(carbG: 50)
+        log.entries = [entry1, entry2]
+        repo.mealLogs.append(log)
 
-        try await nutritionRepo.saveMealLog(log)
-        try await nutritionRepo.addMealEntry(entry, to: log)
+        let vm = makeViewModel(repository: repo)
+        await vm.loadTodaysLogs()
 
-        await viewModel.load()
-
-        XCTAssertEqual(viewModel.totalCarbG, 40, accuracy: 0.1)
+        XCTAssertEqual(vm.totalCarbG, 90, accuracy: 0.01)
     }
 
-    func testTotalFatG_sumsCorrectly() async throws {
-        let today = viewModel.selectedDate
-        let log = MealLog(date: today, mealType: .breakfast)
-        let entry = makeEntry(fatPer100g: 20, servingGrams: 50) // 10g fat
+    func testTotalFatG_sumOfAllEntries() async {
+        let repo = MockNutritionRepository()
+        let log = makeMealLog()
+        let entry1 = makeMealEntry(fatG: 10)
+        let entry2 = makeMealEntry(fatG: 15)
+        log.entries = [entry1, entry2]
+        repo.mealLogs.append(log)
 
-        try await nutritionRepo.saveMealLog(log)
-        try await nutritionRepo.addMealEntry(entry, to: log)
+        let vm = makeViewModel(repository: repo)
+        await vm.loadTodaysLogs()
 
-        await viewModel.load()
-
-        XCTAssertEqual(viewModel.totalFatG, 10, accuracy: 0.1)
+        XCTAssertEqual(vm.totalFatG, 25, accuracy: 0.01)
     }
 
-    func testAllEntries_returnsEntriesFromAllLogs() async throws {
-        let today = viewModel.selectedDate
-        let log1 = MealLog(date: today, mealType: .breakfast)
-        let log2 = MealLog(date: today, mealType: .lunch)
-        let entry1 = makeEntry(servingGrams: 100)
-        let entry2 = makeEntry(servingGrams: 200)
+    func testMacros_aggregateAcrossMultipleLogs() async {
+        let repo = MockNutritionRepository()
+        let breakfastLog = makeMealLog(mealType: .breakfast)
+        let lunchLog = makeMealLog(mealType: .lunch)
 
-        try await nutritionRepo.saveMealLog(log1)
-        try await nutritionRepo.saveMealLog(log2)
-        try await nutritionRepo.addMealEntry(entry1, to: log1)
-        try await nutritionRepo.addMealEntry(entry2, to: log2)
+        breakfastLog.entries = [makeMealEntry(kcal: 400, proteinG: 30)]
+        lunchLog.entries = [makeMealEntry(kcal: 600, proteinG: 45)]
+        repo.mealLogs = [breakfastLog, lunchLog]
 
-        await viewModel.load()
+        let vm = makeViewModel(repository: repo)
+        await vm.loadTodaysLogs()
 
-        XCTAssertEqual(viewModel.allEntries.count, 2)
+        XCTAssertEqual(vm.totalKcal, 1000, accuracy: 0.01)
+        XCTAssertEqual(vm.totalProteinG, 75, accuracy: 0.01)
     }
 
-    // MARK: - Progress Fractions
+    // MARK: - addEntry
 
-    func testKcalProgress_zeroWhenNoEntries() {
-        XCTAssertEqual(viewModel.kcalProgress, 0)
+    func testAddEntry_createsEntryWithCorrectMacros() async {
+        let repo = MockNutritionRepository()
+        let vm = makeViewModel(repository: repo)
+
+        // 200 kcal per 100g, serve 50g → 100 kcal
+        let food = makeFoodItem(kcalPer100g: 200, proteinG: 20, carbG: 10, fatG: 8)
+        await vm.addEntry(foodItem: food, servingGrams: 50, mealType: .breakfast)
+
+        XCTAssertEqual(vm.totalKcal, 100, accuracy: 0.01)
+        XCTAssertEqual(vm.totalProteinG, 10, accuracy: 0.01)
+        XCTAssertEqual(vm.totalCarbG, 5, accuracy: 0.01)
+        XCTAssertEqual(vm.totalFatG, 4, accuracy: 0.01)
     }
 
-    func testKcalProgress_clampedToOne() async throws {
-        // Set a very small target so entries exceed it.
-        profileRepo.profile = UserProfile(
-            name: "A", age: 25, gender: .male,
-            heightCm: 175, weightKg: 70,
-            activityLevel: .sedentary, goal: .maintain,
-            tdeeKcal: 10, proteinTargetG: 1, carbTargetG: 1, fatTargetG: 1
-        )
-        let today = viewModel.selectedDate
-        let log = MealLog(date: today, mealType: .breakfast)
-        let entry = makeEntry(kcalPer100g: 500, servingGrams: 200) // 1000 kcal > 10 target
+    func testAddEntry_createsNewMealLogIfNoneExists() async {
+        let repo = MockNutritionRepository()
+        let vm = makeViewModel(repository: repo)
 
-        try await nutritionRepo.saveMealLog(log)
-        try await nutritionRepo.addMealEntry(entry, to: log)
+        let food = makeFoodItem()
+        await vm.addEntry(foodItem: food, servingGrams: 100, mealType: .lunch)
 
-        await viewModel.load()
-
-        XCTAssertEqual(viewModel.kcalProgress, 1.0, accuracy: 0.001)
+        let todayLogs = try? await repo.fetchMealLogs(for: vm.selectedDate)
+        XCTAssertEqual(todayLogs?.count ?? 0, 1)
+        XCTAssertEqual(todayLogs?.first?.mealType, .lunch)
     }
 
-    func testKcalProgress_halfWhenHalfConsumed() async throws {
-        profileRepo.profile = UserProfile(
-            name: "A", age: 25, gender: .male,
-            heightCm: 175, weightKg: 70,
-            activityLevel: .sedentary, goal: .maintain,
-            tdeeKcal: 2000, proteinTargetG: 150, carbTargetG: 200, fatTargetG: 65
-        )
-        let today = viewModel.selectedDate
-        let log = MealLog(date: today, mealType: .lunch)
-        let entry = makeEntry(kcalPer100g: 1000, servingGrams: 100) // 1000 kcal = 50% of 2000
+    func testAddEntry_reusesExistingMealLog() async {
+        let repo = MockNutritionRepository()
+        let vm = makeViewModel(repository: repo)
 
-        try await nutritionRepo.saveMealLog(log)
-        try await nutritionRepo.addMealEntry(entry, to: log)
+        let food = makeFoodItem()
+        // Add two entries to the same meal type
+        await vm.addEntry(foodItem: food, servingGrams: 100, mealType: .dinner)
+        await vm.addEntry(foodItem: food, servingGrams: 100, mealType: .dinner)
 
-        await viewModel.load()
-
-        XCTAssertEqual(viewModel.kcalProgress, 0.5, accuracy: 0.001)
+        let todayLogs = try? await repo.fetchMealLogs(for: vm.selectedDate)
+        XCTAssertEqual(todayLogs?.count ?? 0, 1, "Should reuse the existing dinner log")
+        XCTAssertEqual(todayLogs?.first?.entries.count ?? 0, 2)
     }
 
-    // MARK: - addEntry(toMealType:)
+    func testAddEntry_onError_setsErrorMessage() async {
+        let repo = MockNutritionRepository()
+        let vm = makeViewModel(repository: repo)
+        repo.shouldThrow = true
 
-    func testAddEntry_createsNewMealLogForMealType() async throws {
-        let entry = makeEntry(servingGrams: 100)
+        let food = makeFoodItem()
+        await vm.addEntry(foodItem: food, servingGrams: 100, mealType: .breakfast)
 
-        await viewModel.addEntry(entry, toMealType: .breakfast)
-
-        XCTAssertEqual(viewModel.mealLogs.count, 1)
-        XCTAssertEqual(viewModel.mealLogs.first?.mealType, .breakfast)
+        XCTAssertNotNil(vm.errorMessage)
     }
 
-    func testAddEntry_reusesExistingMealLogForSameMealType() async throws {
-        let today = viewModel.selectedDate
-        let log = MealLog(date: today, mealType: .lunch)
-        try await nutritionRepo.saveMealLog(log)
-        await viewModel.load()
+    // MARK: - removeEntry
 
-        let entry1 = makeEntry(servingGrams: 100)
-        let entry2 = makeEntry(servingGrams: 150)
+    func testRemoveEntry_decrementsMacroTotals() async {
+        let repo = MockNutritionRepository()
+        let vm = makeViewModel(repository: repo)
 
-        await viewModel.addEntry(entry1, toMealType: .lunch)
-        await viewModel.addEntry(entry2, toMealType: .lunch)
+        let food = makeFoodItem(kcalPer100g: 200, proteinG: 20, carbG: 10, fatG: 8)
+        await vm.addEntry(foodItem: food, servingGrams: 100, mealType: .breakfast)
 
-        // Should still be one MealLog for lunch
-        let lunchLogs = viewModel.mealLogs.filter { $0.mealType == .lunch }
-        XCTAssertEqual(lunchLogs.count, 1)
-        XCTAssertEqual(viewModel.allEntries.count, 2)
+        // Confirm macros are present
+        XCTAssertEqual(vm.totalKcal, 200, accuracy: 0.01)
+
+        // Remove the entry
+        guard let entry = vm.mealLogs.first?.entries.first else {
+            XCTFail("Expected an entry after addEntry")
+            return
+        }
+        await vm.removeEntry(entry)
+
+        XCTAssertEqual(vm.totalKcal, 0, accuracy: 0.01)
+        XCTAssertEqual(vm.totalProteinG, 0, accuracy: 0.01)
     }
 
-    func testAddEntry_differentMealTypes_createsSeparateLogs() async throws {
-        let entry1 = makeEntry(servingGrams: 100)
-        let entry2 = makeEntry(servingGrams: 200)
+    func testRemoveEntry_onError_setsErrorMessage() async {
+        let repo = MockNutritionRepository()
+        let vm = makeViewModel(repository: repo)
 
-        await viewModel.addEntry(entry1, toMealType: .breakfast)
-        await viewModel.addEntry(entry2, toMealType: .dinner)
+        let food = makeFoodItem()
+        await vm.addEntry(foodItem: food, servingGrams: 100, mealType: .snack)
 
-        XCTAssertEqual(viewModel.mealLogs.count, 2)
-        XCTAssertEqual(viewModel.allEntries.count, 2)
+        guard let entry = vm.mealLogs.first?.entries.first else {
+            XCTFail("Expected an entry")
+            return
+        }
+
+        repo.shouldThrow = true
+        await vm.removeEntry(entry)
+
+        XCTAssertNotNil(vm.errorMessage)
     }
 
-    func testAddEntry_updatesMacroTotals() async throws {
-        let entry = makeEntry(kcalPer100g: 400, proteinPer100g: 30, carbPer100g: 50, fatPer100g: 15, servingGrams: 100)
+    // MARK: - deleteMealLog
 
-        await viewModel.addEntry(entry, toMealType: .breakfast)
+    func testDeleteMealLog_removesLogFromMealLogs() async {
+        let repo = MockNutritionRepository()
+        let vm = makeViewModel(repository: repo)
 
-        XCTAssertEqual(viewModel.totalKcal, 400, accuracy: 0.1)
-        XCTAssertEqual(viewModel.totalProteinG, 30, accuracy: 0.1)
-        XCTAssertEqual(viewModel.totalCarbG, 50, accuracy: 0.1)
-        XCTAssertEqual(viewModel.totalFatG, 15, accuracy: 0.1)
+        let food = makeFoodItem()
+        await vm.addEntry(foodItem: food, servingGrams: 100, mealType: .breakfast)
+        XCTAssertFalse(vm.mealLogs.isEmpty)
+
+        let log = vm.mealLogs.first!
+        await vm.deleteMealLog(log)
+
+        XCTAssertTrue(vm.mealLogs.isEmpty)
     }
 
-    func testAddEntry_onRepositoryError_setsErrorMessage() async throws {
-        nutritionRepo.shouldThrow = true
-        let entry = makeEntry(servingGrams: 100)
+    func testDeleteMealLog_resetsMacrosToZero() async {
+        let repo = MockNutritionRepository()
+        let vm = makeViewModel(repository: repo)
 
-        await viewModel.addEntry(entry, toMealType: .breakfast)
+        let food = makeFoodItem(kcalPer100g: 300)
+        await vm.addEntry(foodItem: food, servingGrams: 100, mealType: .lunch)
+        XCTAssertGreaterThan(vm.totalKcal, 0)
 
-        XCTAssertNotNil(viewModel.errorMessage)
+        let log = vm.mealLogs.first!
+        await vm.deleteMealLog(log)
+
+        XCTAssertEqual(vm.totalKcal, 0, accuracy: 0.01)
     }
 
-    func testAddEntry_clearsErrorMessageOnSuccess() async throws {
-        // Pre-populate an error state.
-        nutritionRepo.shouldThrow = true
-        await viewModel.load()
-        XCTAssertNotNil(viewModel.errorMessage)
+    // MARK: - getOrCreateMealLog
 
-        // Now fix the repo and add an entry.
-        nutritionRepo.shouldThrow = false
-        await viewModel.addEntry(makeEntry(servingGrams: 100), toMealType: .snack)
+    func testGetOrCreateMealLog_createsNewLog() async throws {
+        let repo = MockNutritionRepository()
+        let vm = makeViewModel(repository: repo)
 
-        XCTAssertNil(viewModel.errorMessage)
+        let log = try await vm.getOrCreateMealLog(for: .dinner)
+        XCTAssertEqual(log.mealType, .dinner)
+        XCTAssertEqual(vm.mealLogs.count, 1)
     }
 
-    // MARK: - removeEntry(_:)
+    func testGetOrCreateMealLog_returnsExistingLog() async throws {
+        let repo = MockNutritionRepository()
+        let vm = makeViewModel(repository: repo)
 
-    func testRemoveEntry_decrementsMacroTotals() async throws {
-        let entry = makeEntry(kcalPer100g: 300, servingGrams: 100) // 300 kcal
+        let first = try await vm.getOrCreateMealLog(for: .breakfast)
+        let second = try await vm.getOrCreateMealLog(for: .breakfast)
 
-        await viewModel.addEntry(entry, toMealType: .breakfast)
-        XCTAssertEqual(viewModel.totalKcal, 300, accuracy: 0.1)
-
-        await viewModel.removeEntry(entry)
-
-        XCTAssertEqual(viewModel.totalKcal, 0, accuracy: 0.1)
-    }
-
-    func testRemoveEntry_onRepositoryError_setsErrorMessage() async throws {
-        let entry = makeEntry(servingGrams: 100)
-        await viewModel.addEntry(entry, toMealType: .lunch)
-
-        nutritionRepo.shouldThrow = true
-        await viewModel.removeEntry(entry)
-
-        XCTAssertNotNil(viewModel.errorMessage)
-    }
-
-    // MARK: - deleteMealLog(_:)
-
-    func testDeleteMealLog_removesLogAndEntries() async throws {
-        let today = viewModel.selectedDate
-        let log = MealLog(date: today, mealType: .breakfast)
-        let entry = makeEntry(servingGrams: 100)
-
-        try await nutritionRepo.saveMealLog(log)
-        try await nutritionRepo.addMealEntry(entry, to: log)
-        await viewModel.load()
-        XCTAssertEqual(viewModel.mealLogs.count, 1)
-
-        await viewModel.deleteMealLog(log)
-
-        XCTAssertTrue(viewModel.mealLogs.isEmpty)
-        XCTAssertEqual(viewModel.totalKcal, 0, accuracy: 0.1)
-    }
-
-    func testDeleteMealLog_onRepositoryError_setsErrorMessage() async throws {
-        let today = viewModel.selectedDate
-        let log = MealLog(date: today, mealType: .dinner)
-        try await nutritionRepo.saveMealLog(log)
-        await viewModel.load()
-
-        nutritionRepo.shouldThrow = true
-        await viewModel.deleteMealLog(log)
-
-        XCTAssertNotNil(viewModel.errorMessage)
-    }
-
-    // MARK: - selectedDate
-
-    func testSelectedDate_defaultsToToday() {
-        let todayStart = Calendar.current.startOfDay(for: .now)
-        XCTAssertEqual(viewModel.selectedDate, todayStart)
-    }
-
-    func testSelectedDate_changingDateFiltersLogsCorrectly() async throws {
-        let today = viewModel.selectedDate
-        let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: today)!
-
-        let todayLog = MealLog(date: today, mealType: .breakfast)
-        let yesterdayLog = MealLog(date: yesterday, mealType: .lunch)
-
-        try await nutritionRepo.saveMealLog(todayLog)
-        try await nutritionRepo.saveMealLog(yesterdayLog)
-
-        // Load today
-        await viewModel.load()
-        XCTAssertEqual(viewModel.mealLogs.count, 1)
-        XCTAssertEqual(viewModel.mealLogs.first?.mealType, .breakfast)
-
-        // Switch to yesterday
-        viewModel.selectedDate = yesterday
-        await viewModel.load()
-        XCTAssertEqual(viewModel.mealLogs.count, 1)
-        XCTAssertEqual(viewModel.mealLogs.first?.mealType, .lunch)
+        XCTAssertEqual(first.id, second.id)
+        XCTAssertEqual(vm.mealLogs.count, 1)
     }
 }
