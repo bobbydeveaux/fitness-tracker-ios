@@ -5,7 +5,10 @@
   "filesChanged": [
     "FitnessTracker/Features/Dashboard/WeeklySummaryCard.swift",
     "FitnessTracker/Features/Dashboard/DashboardViewModel.swift",
-    "FitnessTracker/Features/Dashboard/DashboardView.swift"
+    "FitnessTracker/Features/Dashboard/DashboardView.swift",
+    "FitnessTracker/Features/Workout/ExerciseLibraryView.swift",
+    "FitnessTracker/Features/Workout/ExerciseDetailView.swift",
+    "FitnessTrackerTests/ExerciseLibraryViewTests.swift"
   ],
   "docsUpdated": [],
   "docsReviewed": [

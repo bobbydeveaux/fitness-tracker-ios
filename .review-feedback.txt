@@ -1,13 +1,8 @@
 ## Code Review - Changes Requested
 
-Review complete. The decision is **changes requested** with a blocking issue:
+The review is complete. The PR is blocked because **no implementation exists** — it's an empty WIP branch with zero code changes. The review JSON has been written to `/workspace/.claude-review.json` with `changes_requested` and `hasBlockingIssues: true`.
 
-- **Branch**: `feature/23-ios-fitness-tracker-app-sprint-3-issue-23`
-- **Diff**: 1 file changed — `.claude-output.json` deleted (19 lines)
-- **Expected deliverable**: `FitnessTracker/Features/Nutrition/FoodSearchView.swift` with FTS-backed food search, macro display, empty/no-results states, and a selection callback
-- **Actual deliverable**: Nothing — the file does not exist in this branch
-
-**Action Required**: Please implement the missing feature before merging.
+**Action Required**: Please address the blocking issues above before merging.
 
 ---
 *Reviewed by code-reviewer agent*
