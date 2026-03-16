@@ -1,0 +1,19 @@
+{
+  "prTitle": "feat: implement SettingsView, NotificationSettingsView, and SettingsViewModel",
+  "prBody": "## Summary\n\n- **`NotificationScheduler`** — wraps `UNUserNotificationCenter` with `requestPermission()`, `scheduleReminders(days:time:)`, and `cancelAll()`; uses a `Weekday` enum (raw values matching `Calendar` weekday integers) for type-safe day selection\n- **`CloudSyncService`** — detects iCloud availability via `FileManager.ubiquityIdentityToken` and publishes `CloudSyncState` (`.synced` / `.error`); `@Observable` for SwiftUI binding\n- **`SettingsViewModel`** — `@Observable @MainActor` class coordinating both services; persists appearance mode, notification-enabled flag, reminder days, and reminder time to `UserDefaults` so all settings survive app termination and restore on next launch; appearance defaults to `.dark`\n- **`SettingsView`** — `Form`-based settings screen with appearance `Picker` (segmented, dark default), notifications `Toggle` with conditional `NavigationLink`, and iCloud row that shows an error `HStack` banner when `syncState == .error`\n- **`NotificationSettingsView`** — 7-column `WeekdayGridView` of pill buttons for multi-select day toggling and a `DatePicker` (hourAndMinute) for reminder time; changes propagate back to `SettingsViewModel` which calls `scheduleReminders`\n- **`SettingsViewModelTests`** — 15 tests covering default state, appearance persistence round-trip, notification permission request, scheduling/cancellation, reminder-days/time persistence, and cloud sync state reflection\n\nCloses #29",
+  "testsPass": true,
+  "filesChanged": [
+    "FitnessTracker/Services/NotificationScheduler.swift",
+    "FitnessTracker/Services/CloudSyncService.swift",
+    "FitnessTracker/Features/Settings/SettingsViewModel.swift",
+    "FitnessTracker/Features/Settings/SettingsView.swift",
+    "FitnessTracker/Features/Settings/NotificationSettingsView.swift",
+    "FitnessTrackerTests/SettingsViewModelTests.swift"
+  ],
+  "docsUpdated": [],
+  "docsReviewed": [
+    "docs/concepts/ios-fitness-tracker-app/LLD.md",
+    "docs/swiftdata-models.md"
+  ],
+  "completedTasks": [1, 2, 3, 4, 5, 6]
+}
