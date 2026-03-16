@@ -1,0 +1,842 @@
+[
+  {
+    "id": "exercise-001",
+    "name": "Barbell Bench Press",
+    "muscleGroup": "Chest",
+    "equipment": "Barbell",
+    "instructions": "Lie flat on a bench, grip the bar slightly wider than shoulder-width. Lower the bar to your mid-chest, then press back up to full arm extension. Keep your feet flat on the floor and maintain a slight arch in your lower back.",
+    "imageName": "barbell_bench_press"
+  },
+  {
+    "id": "exercise-002",
+    "name": "Dumbbell Bench Press",
+    "muscleGroup": "Chest",
+    "equipment": "Dumbbell",
+    "instructions": "Lie flat on a bench holding dumbbells at chest level. Press the dumbbells up and together, then lower them back to your chest with control. Keep elbows at roughly 45 degrees from your torso.",
+    "imageName": "dumbbell_bench_press"
+  },
+  {
+    "id": "exercise-003",
+    "name": "Incline Barbell Press",
+    "muscleGroup": "Chest",
+    "equipment": "Barbell",
+    "instructions": "Set the bench to 30-45 degrees incline. Grip the bar slightly wider than shoulder-width, lower it to your upper chest, then press back up. Targets the upper chest and front deltoids.",
+    "imageName": "incline_barbell_press"
+  },
+  {
+    "id": "exercise-004",
+    "name": "Incline Dumbbell Press",
+    "muscleGroup": "Chest",
+    "equipment": "Dumbbell",
+    "instructions": "Set bench to 30-45 degrees. Hold dumbbells at chest level and press upward, bringing them together at the top. Lower with control to feel the stretch in your upper chest.",
+    "imageName": "incline_dumbbell_press"
+  },
+  {
+    "id": "exercise-005",
+    "name": "Cable Chest Fly",
+    "muscleGroup": "Chest",
+    "equipment": "Cable",
+    "instructions": "Stand between cable stations with handles set at shoulder height. With a slight forward lean, bring the handles together in front of your chest in a wide arc, squeezing your pecs at peak contraction.",
+    "imageName": "cable_chest_fly"
+  },
+  {
+    "id": "exercise-006",
+    "name": "Push-Up",
+    "muscleGroup": "Chest",
+    "equipment": "Bodyweight",
+    "instructions": "Start in a high plank with hands slightly wider than shoulder-width. Lower your chest to the floor, keeping a rigid core, then push back up to full arm extension. Keep your body in a straight line throughout.",
+    "imageName": "push_up"
+  },
+  {
+    "id": "exercise-007",
+    "name": "Dips",
+    "muscleGroup": "Chest",
+    "equipment": "Bodyweight",
+    "instructions": "Support your body between parallel bars. Lower yourself by bending your elbows, leaning slightly forward to target the chest. Press back up to full extension. Add a dip belt for extra resistance.",
+    "imageName": "dips"
+  },
+  {
+    "id": "exercise-008",
+    "name": "Pec Deck Fly",
+    "muscleGroup": "Chest",
+    "equipment": "Machine",
+    "instructions": "Sit at the pec deck machine with your arms bent at 90 degrees. Bring the handles together in front of your chest, squeezing the pecs hard at peak contraction, then return with control.",
+    "imageName": "pec_deck_fly"
+  },
+  {
+    "id": "exercise-009",
+    "name": "Barbell Back Squat",
+    "muscleGroup": "Quadriceps",
+    "equipment": "Barbell",
+    "instructions": "Place barbell on upper traps, stand with feet shoulder-width apart. Descend by pushing your hips back and bending your knees until thighs are parallel or below. Drive through your heels to return to standing.",
+    "imageName": "barbell_back_squat"
+  },
+  {
+    "id": "exercise-010",
+    "name": "Front Squat",
+    "muscleGroup": "Quadriceps",
+    "equipment": "Barbell",
+    "instructions": "Hold the bar in a front rack position across your front deltoids. Keep your torso upright as you squat deep. Drive through the entire foot to stand. Requires good wrist and thoracic mobility.",
+    "imageName": "front_squat"
+  },
+  {
+    "id": "exercise-011",
+    "name": "Leg Press",
+    "muscleGroup": "Quadriceps",
+    "equipment": "Machine",
+    "instructions": "Sit in the leg press machine with feet shoulder-width on the platform. Lower the weight until knees are at 90 degrees, then press back to full extension. Avoid locking knees at the top.",
+    "imageName": "leg_press"
+  },
+  {
+    "id": "exercise-012",
+    "name": "Leg Extension",
+    "muscleGroup": "Quadriceps",
+    "equipment": "Machine",
+    "instructions": "Sit on the leg extension machine with pads on your shins just above the ankles. Extend your legs to full lockout, hold briefly, then lower with control. Isolates the quadriceps.",
+    "imageName": "leg_extension"
+  },
+  {
+    "id": "exercise-013",
+    "name": "Bulgarian Split Squat",
+    "muscleGroup": "Quadriceps",
+    "equipment": "Dumbbell",
+    "instructions": "Stand in front of a bench, place one foot on the bench behind you. Hold dumbbells at your sides. Lower your back knee toward the floor, then drive through your front heel to stand.",
+    "imageName": "bulgarian_split_squat"
+  },
+  {
+    "id": "exercise-014",
+    "name": "Walking Lunges",
+    "muscleGroup": "Quadriceps",
+    "equipment": "Dumbbell",
+    "instructions": "Hold dumbbells at your sides. Step forward and lower your back knee toward the floor, then bring your rear foot forward to step into the next lunge. Keep your torso upright throughout.",
+    "imageName": "walking_lunges"
+  },
+  {
+    "id": "exercise-015",
+    "name": "Romanian Deadlift",
+    "muscleGroup": "Hamstrings",
+    "equipment": "Barbell",
+    "instructions": "Hold a barbell at hip level with a hip-width stance. Push your hips back, keeping the bar close to your legs and your back flat. Lower until you feel a deep hamstring stretch, then drive hips forward to return.",
+    "imageName": "romanian_deadlift"
+  },
+  {
+    "id": "exercise-016",
+    "name": "Leg Curl",
+    "muscleGroup": "Hamstrings",
+    "equipment": "Machine",
+    "instructions": "Lie face down on the leg curl machine with pads on the back of your ankles. Curl your heels toward your glutes, hold briefly at peak contraction, then lower with control.",
+    "imageName": "leg_curl"
+  },
+  {
+    "id": "exercise-017",
+    "name": "Stiff-Leg Deadlift",
+    "muscleGroup": "Hamstrings",
+    "equipment": "Dumbbell",
+    "instructions": "Hold dumbbells in front of your thighs with a slight knee bend. Hinge at the hips and lower the weights down your legs while keeping a flat back. Return by driving hips forward.",
+    "imageName": "stiff_leg_deadlift"
+  },
+  {
+    "id": "exercise-018",
+    "name": "Nordic Hamstring Curl",
+    "muscleGroup": "Hamstrings",
+    "equipment": "Bodyweight",
+    "instructions": "Kneel on a pad with your ankles anchored. Lower your torso toward the floor as slowly as possible using hamstring control, then use your hands to push back up. Extremely challenging but highly effective.",
+    "imageName": "nordic_hamstring_curl"
+  },
+  {
+    "id": "exercise-019",
+    "name": "Hip Thrust",
+    "muscleGroup": "Glutes",
+    "equipment": "Barbell",
+    "instructions": "Sit against a bench with a barbell across your hips. Plant your feet flat and drive your hips up until your thighs are parallel with the floor. Squeeze your glutes at the top and lower with control.",
+    "imageName": "hip_thrust"
+  },
+  {
+    "id": "exercise-020",
+    "name": "Glute Bridge",
+    "muscleGroup": "Glutes",
+    "equipment": "Bodyweight",
+    "instructions": "Lie on your back with knees bent and feet flat. Drive your hips up to form a straight line from shoulders to knees, squeezing glutes at the top. Hold briefly then lower.",
+    "imageName": "glute_bridge"
+  },
+  {
+    "id": "exercise-021",
+    "name": "Cable Kickback",
+    "muscleGroup": "Glutes",
+    "equipment": "Cable",
+    "instructions": "Attach an ankle strap to a low cable pulley. Stand facing the machine, slightly bent over. Kick your attached leg straight back, squeezing the glute at peak contraction, then return with control.",
+    "imageName": "cable_kickback"
+  },
+  {
+    "id": "exercise-022",
+    "name": "Conventional Deadlift",
+    "muscleGroup": "Back",
+    "equipment": "Barbell",
+    "instructions": "Stand with feet hip-width, bar over mid-foot. Hinge to grip the bar, set your back flat, chest up. Drive through your heels and push the floor away, maintaining bar contact with your legs throughout.",
+    "imageName": "conventional_deadlift"
+  },
+  {
+    "id": "exercise-023",
+    "name": "Barbell Row",
+    "muscleGroup": "Back",
+    "equipment": "Barbell",
+    "instructions": "Hinge at the hips to about 45 degrees with a flat back. Pull the bar to your lower abdomen, leading with your elbows. Squeeze your lats and upper back at peak contraction, then lower with control.",
+    "imageName": "barbell_row"
+  },
+  {
+    "id": "exercise-024",
+    "name": "Pull-Up",
+    "muscleGroup": "Back",
+    "equipment": "Bodyweight",
+    "instructions": "Hang from a pull-up bar with a pronated grip slightly wider than shoulder-width. Pull your chest to the bar by driving your elbows down and back. Lower with control to full arm extension.",
+    "imageName": "pull_up"
+  },
+  {
+    "id": "exercise-025",
+    "name": "Chin-Up",
+    "muscleGroup": "Back",
+    "equipment": "Bodyweight",
+    "instructions": "Hang from a bar with a supinated (underhand) grip at shoulder-width. Pull your chin above the bar by driving elbows toward your hips. Lower with control to full extension.",
+    "imageName": "chin_up"
+  },
+  {
+    "id": "exercise-026",
+    "name": "Lat Pulldown",
+    "muscleGroup": "Back",
+    "equipment": "Cable",
+    "instructions": "Sit at the lat pulldown machine, grip the bar wider than shoulder-width. Pull the bar to your upper chest by driving elbows down and back, squeezing lats at the bottom. Return with control.",
+    "imageName": "lat_pulldown"
+  },
+  {
+    "id": "exercise-027",
+    "name": "Seated Cable Row",
+    "muscleGroup": "Back",
+    "equipment": "Cable",
+    "instructions": "Sit at the cable row station with a slight bend in your knees. Pull the handle to your lower abdomen, leading with your elbows and squeezing your shoulder blades together. Return with control.",
+    "imageName": "seated_cable_row"
+  },
+  {
+    "id": "exercise-028",
+    "name": "Dumbbell Row",
+    "muscleGroup": "Back",
+    "equipment": "Dumbbell",
+    "instructions": "Place one knee and hand on a bench for support. With the opposite arm, pull a dumbbell to your hip, keeping your elbow close to your body. Squeeze your lat at the top and lower with control.",
+    "imageName": "dumbbell_row"
+  },
+  {
+    "id": "exercise-029",
+    "name": "T-Bar Row",
+    "muscleGroup": "Back",
+    "equipment": "Barbell",
+    "instructions": "Straddle the T-bar, hinge forward to about 45 degrees. Pull the bar to your chest, driving elbows wide and squeezing your upper back. Lower with control.",
+    "imageName": "t_bar_row"
+  },
+  {
+    "id": "exercise-030",
+    "name": "Face Pull",
+    "muscleGroup": "Back",
+    "equipment": "Cable",
+    "instructions": "Set a cable at upper-chest height with a rope attachment. Pull the rope toward your face, separating your hands and driving elbows back. Hold briefly, squeezing rear delts and rotator cuff, then return.",
+    "imageName": "face_pull"
+  },
+  {
+    "id": "exercise-031",
+    "name": "Overhead Press",
+    "muscleGroup": "Shoulders",
+    "equipment": "Barbell",
+    "instructions": "Stand or sit with a barbell at shoulder height. Press the bar directly overhead to full arm extension, then lower with control. Keep your core braced and avoid excessive lower-back arch.",
+    "imageName": "overhead_press"
+  },
+  {
+    "id": "exercise-032",
+    "name": "Dumbbell Shoulder Press",
+    "muscleGroup": "Shoulders",
+    "equipment": "Dumbbell",
+    "instructions": "Sit or stand holding dumbbells at shoulder height with palms forward. Press the dumbbells overhead, bringing them together slightly at the top, then lower with control.",
+    "imageName": "dumbbell_shoulder_press"
+  },
+  {
+    "id": "exercise-033",
+    "name": "Lateral Raise",
+    "muscleGroup": "Shoulders",
+    "equipment": "Dumbbell",
+    "instructions": "Stand with dumbbells at your sides. Raise your arms to shoulder height with a slight bend in the elbows, leading with your pinkies. Lower with control. Targets the medial deltoid.",
+    "imageName": "lateral_raise"
+  },
+  {
+    "id": "exercise-034",
+    "name": "Front Raise",
+    "muscleGroup": "Shoulders",
+    "equipment": "Dumbbell",
+    "instructions": "Hold dumbbells in front of your thighs. Raise one or both arms to shoulder height with a slight elbow bend. Lower with control. Isolates the anterior deltoid.",
+    "imageName": "front_raise"
+  },
+  {
+    "id": "exercise-035",
+    "name": "Rear Delt Fly",
+    "muscleGroup": "Shoulders",
+    "equipment": "Dumbbell",
+    "instructions": "Hinge forward to about 45 degrees or sit at the end of a bench. Raise dumbbells out to the sides in a wide arc, squeezing rear delts at peak. Lower with control.",
+    "imageName": "rear_delt_fly"
+  },
+  {
+    "id": "exercise-036",
+    "name": "Arnold Press",
+    "muscleGroup": "Shoulders",
+    "equipment": "Dumbbell",
+    "instructions": "Start with dumbbells at chin height, palms facing you. As you press up, rotate your palms to face forward. Reverse the rotation as you lower back to the start. Hits all three deltoid heads.",
+    "imageName": "arnold_press"
+  },
+  {
+    "id": "exercise-037",
+    "name": "Upright Row",
+    "muscleGroup": "Shoulders",
+    "equipment": "Barbell",
+    "instructions": "Hold a barbell with a narrow overhand grip. Pull it up along your body to chin height, leading with your elbows. Lower with control. Targets medial deltoids and trapezius.",
+    "imageName": "upright_row"
+  },
+  {
+    "id": "exercise-038",
+    "name": "Barbell Curl",
+    "muscleGroup": "Biceps",
+    "equipment": "Barbell",
+    "instructions": "Stand with a barbell in an underhand grip at hip width. Curl the bar to shoulder height while keeping your elbows fixed at your sides. Squeeze the biceps at the top and lower with control.",
+    "imageName": "barbell_curl"
+  },
+  {
+    "id": "exercise-039",
+    "name": "Dumbbell Curl",
+    "muscleGroup": "Biceps",
+    "equipment": "Dumbbell",
+    "instructions": "Stand holding dumbbells with palms facing forward. Curl them up to shoulder height alternately or simultaneously. Squeeze the biceps at the top and lower with control.",
+    "imageName": "dumbbell_curl"
+  },
+  {
+    "id": "exercise-040",
+    "name": "Hammer Curl",
+    "muscleGroup": "Biceps",
+    "equipment": "Dumbbell",
+    "instructions": "Hold dumbbells with a neutral (hammer) grip, thumbs up. Curl them to shoulder height without rotating your wrists. Targets the brachialis and brachioradialis for arm thickness.",
+    "imageName": "hammer_curl"
+  },
+  {
+    "id": "exercise-041",
+    "name": "Preacher Curl",
+    "muscleGroup": "Biceps",
+    "equipment": "Barbell",
+    "instructions": "Sit at a preacher bench with your upper arms resting on the pad. Curl a barbell or dumbbells up to shoulder height, squeezing at peak. Lower slowly for maximum stretch.",
+    "imageName": "preacher_curl"
+  },
+  {
+    "id": "exercise-042",
+    "name": "Cable Curl",
+    "muscleGroup": "Biceps",
+    "equipment": "Cable",
+    "instructions": "Stand facing a low cable pulley with a straight bar or EZ-bar attachment. Curl the bar to shoulder height, keeping your elbows fixed. Lower with control to feel the constant tension.",
+    "imageName": "cable_curl"
+  },
+  {
+    "id": "exercise-043",
+    "name": "Concentration Curl",
+    "muscleGroup": "Biceps",
+    "equipment": "Dumbbell",
+    "instructions": "Sit on a bench with your elbow braced on your inner thigh. Curl a dumbbell to shoulder height, fully supinating at the top. Isolates the bicep for peak contraction.",
+    "imageName": "concentration_curl"
+  },
+  {
+    "id": "exercise-044",
+    "name": "Tricep Pushdown",
+    "muscleGroup": "Triceps",
+    "equipment": "Cable",
+    "instructions": "Stand at a high cable pulley with a rope or straight bar attachment. Push the attachment down to full arm extension, keeping your upper arms fixed at your sides. Return with control.",
+    "imageName": "tricep_pushdown"
+  },
+  {
+    "id": "exercise-045",
+    "name": "Skull Crusher",
+    "muscleGroup": "Triceps",
+    "equipment": "Barbell",
+    "instructions": "Lie on a bench holding an EZ-bar or barbell above your chest. Lower the bar toward your forehead by bending only at the elbows. Press back up to full extension.",
+    "imageName": "skull_crusher"
+  },
+  {
+    "id": "exercise-046",
+    "name": "Tricep Overhead Extension",
+    "muscleGroup": "Triceps",
+    "equipment": "Dumbbell",
+    "instructions": "Hold a single dumbbell overhead with both hands, elbows pointing up. Lower the dumbbell behind your head by bending at the elbows, then extend back to full lockout. Stretches the long head of the triceps.",
+    "imageName": "tricep_overhead_extension"
+  },
+  {
+    "id": "exercise-047",
+    "name": "Close-Grip Bench Press",
+    "muscleGroup": "Triceps",
+    "equipment": "Barbell",
+    "instructions": "Lie on a flat bench, grip the bar at shoulder-width or slightly narrower. Lower the bar to your lower chest, keeping elbows close to your body. Press back up. Heavily loads the triceps.",
+    "imageName": "close_grip_bench_press"
+  },
+  {
+    "id": "exercise-048",
+    "name": "Diamond Push-Up",
+    "muscleGroup": "Triceps",
+    "equipment": "Bodyweight",
+    "instructions": "Form a diamond shape with your thumbs and index fingers on the floor. Perform a push-up, keeping elbows tight to the body. Maximises tricep activation through the close hand position.",
+    "imageName": "diamond_push_up"
+  },
+  {
+    "id": "exercise-049",
+    "name": "Tricep Dips (Bench)",
+    "muscleGroup": "Triceps",
+    "equipment": "Bodyweight",
+    "instructions": "Place hands on a bench behind you and feet on the floor or elevated. Lower your body by bending at the elbows until upper arms are parallel to the floor, then push back up.",
+    "imageName": "tricep_dips_bench"
+  },
+  {
+    "id": "exercise-050",
+    "name": "Calf Raise",
+    "muscleGroup": "Calves",
+    "equipment": "Machine",
+    "instructions": "Stand on a calf raise machine with shoulders under the pads. Rise onto the balls of your feet as high as possible, hold briefly, then lower your heels below the platform for maximum stretch.",
+    "imageName": "calf_raise"
+  },
+  {
+    "id": "exercise-051",
+    "name": "Seated Calf Raise",
+    "muscleGroup": "Calves",
+    "equipment": "Machine",
+    "instructions": "Sit at the seated calf raise machine with pads on your knees. Rise onto the balls of your feet and hold at peak contraction. Lower your heels slowly for a deep stretch. Targets the soleus.",
+    "imageName": "seated_calf_raise"
+  },
+  {
+    "id": "exercise-052",
+    "name": "Standing Calf Raise (Barbell)",
+    "muscleGroup": "Calves",
+    "equipment": "Barbell",
+    "instructions": "Place a barbell across your upper traps. Stand on a weight plate with the balls of your feet. Rise onto your toes as high as possible, hold, then lower with control for a deep stretch.",
+    "imageName": "standing_calf_raise_barbell"
+  },
+  {
+    "id": "exercise-053",
+    "name": "Plank",
+    "muscleGroup": "Core",
+    "equipment": "Bodyweight",
+    "instructions": "Assume a forearm plank position with elbows directly under your shoulders. Keep your body in a straight line from head to heels, squeezing your core. Hold for time without letting your hips sag.",
+    "imageName": "plank"
+  },
+  {
+    "id": "exercise-054",
+    "name": "Ab Wheel Rollout",
+    "muscleGroup": "Core",
+    "equipment": "Other",
+    "instructions": "Kneel with hands on an ab wheel. Roll forward until your body is parallel to the floor, then use your core to pull the wheel back to the start. Keep your hips level throughout.",
+    "imageName": "ab_wheel_rollout"
+  },
+  {
+    "id": "exercise-055",
+    "name": "Hanging Knee Raise",
+    "muscleGroup": "Core",
+    "equipment": "Bodyweight",
+    "instructions": "Hang from a pull-up bar. Raise your knees to your chest while curling your pelvis upward to maximise lower ab activation. Lower with control. Avoid swinging.",
+    "imageName": "hanging_knee_raise"
+  },
+  {
+    "id": "exercise-056",
+    "name": "Cable Crunch",
+    "muscleGroup": "Core",
+    "equipment": "Cable",
+    "instructions": "Kneel at a high cable pulley with a rope attachment. Hold the rope at your temples. Crunch down by flexing your spine, bringing your elbows toward your knees. Return with control.",
+    "imageName": "cable_crunch"
+  },
+  {
+    "id": "exercise-057",
+    "name": "Russian Twist",
+    "muscleGroup": "Core",
+    "equipment": "Dumbbell",
+    "instructions": "Sit on the floor with knees bent and feet elevated. Hold a dumbbell or plate. Rotate your torso side to side, touching the weight to the floor on each side. Targets the obliques.",
+    "imageName": "russian_twist"
+  },
+  {
+    "id": "exercise-058",
+    "name": "Crunch",
+    "muscleGroup": "Core",
+    "equipment": "Bodyweight",
+    "instructions": "Lie on your back with knees bent and hands lightly behind your head. Curl your shoulder blades off the floor by contracting your abs. Focus on spinal flexion, not pulling your neck.",
+    "imageName": "crunch"
+  },
+  {
+    "id": "exercise-059",
+    "name": "Leg Raise",
+    "muscleGroup": "Core",
+    "equipment": "Bodyweight",
+    "instructions": "Lie flat on your back with legs straight. Raise your legs to 90 degrees while keeping your lower back pressed to the floor, then lower slowly without letting your feet touch the ground.",
+    "imageName": "leg_raise"
+  },
+  {
+    "id": "exercise-060",
+    "name": "Dead Bug",
+    "muscleGroup": "Core",
+    "equipment": "Bodyweight",
+    "instructions": "Lie on your back with arms pointing to the ceiling and knees bent at 90 degrees. Lower opposite arm and leg toward the floor simultaneously while pressing your lower back down. Alternate sides.",
+    "imageName": "dead_bug"
+  },
+  {
+    "id": "exercise-061",
+    "name": "Goblet Squat",
+    "muscleGroup": "Quadriceps",
+    "equipment": "Dumbbell",
+    "instructions": "Hold a dumbbell or kettlebell at your chest. Stand with feet shoulder-width apart and squat deep, keeping your torso upright and elbows inside your knees. Drive back up through your heels.",
+    "imageName": "goblet_squat"
+  },
+  {
+    "id": "exercise-062",
+    "name": "Hack Squat",
+    "muscleGroup": "Quadriceps",
+    "equipment": "Machine",
+    "instructions": "Stand in the hack squat machine with shoulders under pads and feet on the platform. Descend until thighs are parallel, then press back up. A knee-friendly squatting pattern that emphasises quads.",
+    "imageName": "hack_squat"
+  },
+  {
+    "id": "exercise-063",
+    "name": "Good Morning",
+    "muscleGroup": "Hamstrings",
+    "equipment": "Barbell",
+    "instructions": "Place a barbell across your upper traps. With a slight knee bend, hinge at the hips until your torso is near parallel to the floor. Drive your hips forward to return. Strengthens erectors and hamstrings.",
+    "imageName": "good_morning"
+  },
+  {
+    "id": "exercise-064",
+    "name": "Sumo Deadlift",
+    "muscleGroup": "Back",
+    "equipment": "Barbell",
+    "instructions": "Stand with a wide stance, toes turned out. Grip the bar inside your legs. Descend by pushing your hips back and knees out, then drive through your heels. Targets inner thighs and glutes more than conventional.",
+    "imageName": "sumo_deadlift"
+  },
+  {
+    "id": "exercise-065",
+    "name": "Trap Bar Deadlift",
+    "muscleGroup": "Back",
+    "equipment": "Barbell",
+    "instructions": "Stand inside a hex/trap bar, grip the handles at your sides. Hinge down with a flat back and drive through your heels to stand. Allows a more upright torso than conventional deadlift.",
+    "imageName": "trap_bar_deadlift"
+  },
+  {
+    "id": "exercise-066",
+    "name": "Shrug",
+    "muscleGroup": "Back",
+    "equipment": "Barbell",
+    "instructions": "Hold a barbell in front of your thighs with an overhand grip. Elevate your shoulders toward your ears as high as possible, hold briefly at the top, then lower with control. Isolates the trapezius.",
+    "imageName": "shrug"
+  },
+  {
+    "id": "exercise-067",
+    "name": "Dumbbell Shrug",
+    "muscleGroup": "Back",
+    "equipment": "Dumbbell",
+    "instructions": "Hold dumbbells at your sides. Shrug your shoulders straight up toward your ears, hold at peak contraction, then lower with control. Avoid rolling your shoulders.",
+    "imageName": "dumbbell_shrug"
+  },
+  {
+    "id": "exercise-068",
+    "name": "Chest-Supported Row",
+    "muscleGroup": "Back",
+    "equipment": "Dumbbell",
+    "instructions": "Lie face down on an incline bench. Let dumbbells hang and then row them to your hips, driving elbows back. The chest support eliminates lower back involvement for pure lat and rhomboid work.",
+    "imageName": "chest_supported_row"
+  },
+  {
+    "id": "exercise-069",
+    "name": "Inverted Row",
+    "muscleGroup": "Back",
+    "equipment": "Bodyweight",
+    "instructions": "Lie under a bar set at waist height. Grip the bar overhand, hang with a straight body. Pull your chest to the bar, squeezing your shoulder blades together. Lower with control.",
+    "imageName": "inverted_row"
+  },
+  {
+    "id": "exercise-070",
+    "name": "Cable Lateral Raise",
+    "muscleGroup": "Shoulders",
+    "equipment": "Cable",
+    "instructions": "Stand beside a low cable pulley. With a slight elbow bend, raise the cable handle out to shoulder height, leading with your elbow. Lower with control. Constant cable tension improves muscle development.",
+    "imageName": "cable_lateral_raise"
+  },
+  {
+    "id": "exercise-071",
+    "name": "Machine Shoulder Press",
+    "muscleGroup": "Shoulders",
+    "equipment": "Machine",
+    "instructions": "Sit at a shoulder press machine. Grip the handles and press overhead to full extension. Lower with control. Guides the movement pattern for beginners or for high-rep fatigue sets.",
+    "imageName": "machine_shoulder_press"
+  },
+  {
+    "id": "exercise-072",
+    "name": "Incline Dumbbell Curl",
+    "muscleGroup": "Biceps",
+    "equipment": "Dumbbell",
+    "instructions": "Set a bench to 45-60 degrees. Hold dumbbells and let arms hang straight. Curl the weights up while keeping elbows back. The incline increases the stretch on the long head of the bicep.",
+    "imageName": "incline_dumbbell_curl"
+  },
+  {
+    "id": "exercise-073",
+    "name": "EZ Bar Curl",
+    "muscleGroup": "Biceps",
+    "equipment": "Barbell",
+    "instructions": "Hold an EZ-bar with an underhand grip on the angled portions. Curl to shoulder height with fixed elbows. The angled grip is easier on the wrists and shifts emphasis to different bicep fibers.",
+    "imageName": "ez_bar_curl"
+  },
+  {
+    "id": "exercise-074",
+    "name": "Cable Tricep Pushdown (Rope)",
+    "muscleGroup": "Triceps",
+    "equipment": "Cable",
+    "instructions": "Use a rope attachment at a high cable. Push the rope down to full arm extension, splitting the rope apart at the bottom to maximise the tricep squeeze. Keep elbows fixed at your sides.",
+    "imageName": "cable_tricep_pushdown_rope"
+  },
+  {
+    "id": "exercise-075",
+    "name": "JM Press",
+    "muscleGroup": "Triceps",
+    "equipment": "Barbell",
+    "instructions": "Lie on a bench with arms extended. Lower the bar toward your neck in a skull-crusher motion, then row your elbows forward at the bottom and press back up. Hybrid movement for triceps mass.",
+    "imageName": "jm_press"
+  },
+  {
+    "id": "exercise-076",
+    "name": "Donkey Calf Raise",
+    "muscleGroup": "Calves",
+    "equipment": "Machine",
+    "instructions": "Bend forward at the hips on a donkey calf machine with the pad across your lower back. Rise onto the balls of your feet as high as possible, then lower for a full stretch.",
+    "imageName": "donkey_calf_raise"
+  },
+  {
+    "id": "exercise-077",
+    "name": "Side Plank",
+    "muscleGroup": "Core",
+    "equipment": "Bodyweight",
+    "instructions": "Lie on your side and prop yourself on one forearm. Stack your feet and raise your hips, forming a straight line from head to heels. Hold for time. Targets the obliques and lateral core.",
+    "imageName": "side_plank"
+  },
+  {
+    "id": "exercise-078",
+    "name": "Bicycle Crunch",
+    "muscleGroup": "Core",
+    "equipment": "Bodyweight",
+    "instructions": "Lie on your back with hands behind your head. Rotate your torso to bring one elbow toward the opposite knee, simultaneously extending the other leg. Alternate sides in a pedalling motion.",
+    "imageName": "bicycle_crunch"
+  },
+  {
+    "id": "exercise-079",
+    "name": "Pallof Press",
+    "muscleGroup": "Core",
+    "equipment": "Cable",
+    "instructions": "Set a cable at chest height. Stand perpendicular to the machine, holding the handle at your chest. Press the handle straight out and hold, resisting rotation. Return to chest. Anti-rotation core training.",
+    "imageName": "pallof_press"
+  },
+  {
+    "id": "exercise-080",
+    "name": "Landmine Press",
+    "muscleGroup": "Shoulders",
+    "equipment": "Barbell",
+    "instructions": "Anchor a barbell in a landmine attachment. Hold the sleeve at shoulder height and press the bar at an upward angle. The arc motion is joint-friendly and targets the anterior deltoid and upper chest.",
+    "imageName": "landmine_press"
+  },
+  {
+    "id": "exercise-081",
+    "name": "Neutral-Grip Pull-Up",
+    "muscleGroup": "Back",
+    "equipment": "Bodyweight",
+    "instructions": "Use parallel handles to grip with palms facing each other. Pull your chest up to handle height, leading with your elbows. Lower with control. Neutral grip reduces shoulder stress.",
+    "imageName": "neutral_grip_pull_up"
+  },
+  {
+    "id": "exercise-082",
+    "name": "Single-Leg Press",
+    "muscleGroup": "Quadriceps",
+    "equipment": "Machine",
+    "instructions": "On a leg press machine, use only one leg. Adjust weight accordingly and press the platform until your knee is almost straight. Addresses leg imbalances with isolated unilateral loading.",
+    "imageName": "single_leg_press"
+  },
+  {
+    "id": "exercise-083",
+    "name": "Step-Up",
+    "muscleGroup": "Quadriceps",
+    "equipment": "Dumbbell",
+    "instructions": "Hold dumbbells at your sides. Step up onto a box or bench, driving through the front heel. Stand fully at the top before stepping down. Alternate legs. Develops unilateral quad strength.",
+    "imageName": "step_up"
+  },
+  {
+    "id": "exercise-084",
+    "name": "Reverse Lunge",
+    "muscleGroup": "Quadriceps",
+    "equipment": "Dumbbell",
+    "instructions": "Hold dumbbells at your sides. Step one foot back and lower your rear knee toward the floor. Drive through your front heel to return. Easier on the knees than forward lunges.",
+    "imageName": "reverse_lunge"
+  },
+  {
+    "id": "exercise-085",
+    "name": "Pendulum Squat",
+    "muscleGroup": "Quadriceps",
+    "equipment": "Machine",
+    "instructions": "Stand on the pendulum squat machine and lower into a deep squat with a vertical torso. Press back to start. Provides an extreme range of motion with knee-friendly loading.",
+    "imageName": "pendulum_squat"
+  },
+  {
+    "id": "exercise-086",
+    "name": "Hip Adduction",
+    "muscleGroup": "Glutes",
+    "equipment": "Machine",
+    "instructions": "Sit in the hip adduction machine with pads on your inner thighs. Squeeze your legs together against the resistance. Return slowly. Targets the hip adductors and inner thigh muscles.",
+    "imageName": "hip_adduction"
+  },
+  {
+    "id": "exercise-087",
+    "name": "Hip Abduction",
+    "muscleGroup": "Glutes",
+    "equipment": "Machine",
+    "instructions": "Sit in the hip abduction machine with pads on your outer thighs. Push your legs apart against the resistance. Return slowly. Targets the gluteus medius and hip abductors.",
+    "imageName": "hip_abduction"
+  },
+  {
+    "id": "exercise-088",
+    "name": "Single-Leg Romanian Deadlift",
+    "muscleGroup": "Hamstrings",
+    "equipment": "Dumbbell",
+    "instructions": "Hold a dumbbell in one hand, standing on the opposite leg. Hinge forward, reaching the dumbbell toward the floor while extending your free leg behind you. Return to standing. Challenges balance and hip stability.",
+    "imageName": "single_leg_rdl"
+  },
+  {
+    "id": "exercise-089",
+    "name": "Glute-Ham Raise",
+    "muscleGroup": "Hamstrings",
+    "equipment": "Machine",
+    "instructions": "Anchor your feet in a GHR machine. Lower your torso forward with a straight body, then use your hamstrings to curl yourself back up. Develops the hamstrings through both knee flexion and hip extension.",
+    "imageName": "glute_ham_raise"
+  },
+  {
+    "id": "exercise-090",
+    "name": "Chest Press Machine",
+    "muscleGroup": "Chest",
+    "equipment": "Machine",
+    "instructions": "Sit with back flat against the pad. Grip handles at chest level and press forward to full arm extension. Return with control. Good option for beginners or isolation work without a spotter.",
+    "imageName": "chest_press_machine"
+  },
+  {
+    "id": "exercise-091",
+    "name": "Low Cable Fly",
+    "muscleGroup": "Chest",
+    "equipment": "Cable",
+    "instructions": "Set cables at the lowest position. Hold handles and bring them up and together in a wide arc to chest height. Squeeze pecs at peak. Returns the cables low to high targets the lower and mid chest.",
+    "imageName": "low_cable_fly"
+  },
+  {
+    "id": "exercise-092",
+    "name": "Tricep Kickback",
+    "muscleGroup": "Triceps",
+    "equipment": "Dumbbell",
+    "instructions": "Hinge forward at the hips with upper arm parallel to the floor. Extend your forearm back to full lockout, squeezing the tricep. Return with control. Best used as a finishing movement.",
+    "imageName": "tricep_kickback"
+  },
+  {
+    "id": "exercise-093",
+    "name": "Overhead Tricep Cable Extension",
+    "muscleGroup": "Triceps",
+    "equipment": "Cable",
+    "instructions": "Face away from a high cable pulley, holding a rope or bar behind your head. Press your hands forward and upward to full extension. Stretches the long head of the tricep maximally.",
+    "imageName": "overhead_tricep_cable_extension"
+  },
+  {
+    "id": "exercise-094",
+    "name": "Zottman Curl",
+    "muscleGroup": "Biceps",
+    "equipment": "Dumbbell",
+    "instructions": "Curl dumbbells up with a supinated grip, rotate to pronated (palms down) at the top, then lower slowly. Trains both the biceps on the way up and forearm extensors on the way down.",
+    "imageName": "zottman_curl"
+  },
+  {
+    "id": "exercise-095",
+    "name": "Wrist Curl",
+    "muscleGroup": "Forearms",
+    "equipment": "Barbell",
+    "instructions": "Sit with your forearms on your thighs, wrists hanging over your knees. Curl the barbell up by flexing your wrists. Lower with control. Develops forearm flexors.",
+    "imageName": "wrist_curl"
+  },
+  {
+    "id": "exercise-096",
+    "name": "Reverse Wrist Curl",
+    "muscleGroup": "Forearms",
+    "equipment": "Barbell",
+    "instructions": "Sit with forearms on your thighs in a pronated grip. Extend your wrists upward against the resistance. Lower with control. Develops the forearm extensors.",
+    "imageName": "reverse_wrist_curl"
+  },
+  {
+    "id": "exercise-097",
+    "name": "Farmer's Carry",
+    "muscleGroup": "Forearms",
+    "equipment": "Dumbbell",
+    "instructions": "Hold heavy dumbbells at your sides and walk for distance or time. Keep your shoulders back, chest up, and grip firm. Develops grip strength, traps, and overall body stability.",
+    "imageName": "farmers_carry"
+  },
+  {
+    "id": "exercise-098",
+    "name": "Seated Leg Curl",
+    "muscleGroup": "Hamstrings",
+    "equipment": "Machine",
+    "instructions": "Sit in the seated leg curl machine with pads on your shins. Curl your legs downward and back. The seated position changes the hip angle, providing a better peak contraction vs. lying curl.",
+    "imageName": "seated_leg_curl"
+  },
+  {
+    "id": "exercise-099",
+    "name": "Dumbbell Step-Up with Knee Drive",
+    "muscleGroup": "Quadriceps",
+    "equipment": "Dumbbell",
+    "instructions": "Hold dumbbells and step up onto a platform. Drive the rear knee up toward your chest at the top of the movement before stepping down. Adds a balance and hip flexor challenge.",
+    "imageName": "step_up_knee_drive"
+  },
+  {
+    "id": "exercise-100",
+    "name": "Kettlebell Swing",
+    "muscleGroup": "Glutes",
+    "equipment": "Other",
+    "instructions": "Stand with feet hip-width, holding a kettlebell. Hinge at the hips to swing the kettlebell back between your legs, then drive your hips forward explosively to swing it to shoulder height. A powerful posterior chain movement.",
+    "imageName": "kettlebell_swing"
+  },
+  {
+    "id": "exercise-101",
+    "name": "Box Jump",
+    "muscleGroup": "Quadriceps",
+    "equipment": "Bodyweight",
+    "instructions": "Stand in front of a sturdy box. Hinge at the hips and swing your arms, then explode upward, landing softly on the box with knees bent. Step down carefully. Develops explosive leg power.",
+    "imageName": "box_jump"
+  },
+  {
+    "id": "exercise-102",
+    "name": "Mountain Climber",
+    "muscleGroup": "Core",
+    "equipment": "Bodyweight",
+    "instructions": "Assume a high plank position. Drive one knee toward your chest, then quickly switch legs in a running motion. Keep your hips level and core tight. A dynamic full-body cardiovascular exercise.",
+    "imageName": "mountain_climber"
+  },
+  {
+    "id": "exercise-103",
+    "name": "Cable Pull-Through",
+    "muscleGroup": "Glutes",
+    "equipment": "Cable",
+    "instructions": "Stand facing away from a low cable with a rope attachment between your legs. Hinge at the hips, letting the cable pull through, then drive your hips forward to stand. Great for posterior chain activation.",
+    "imageName": "cable_pull_through"
+  },
+  {
+    "id": "exercise-104",
+    "name": "Dumbbell Fly",
+    "muscleGroup": "Chest",
+    "equipment": "Dumbbell",
+    "instructions": "Lie on a bench holding dumbbells above your chest with a slight elbow bend. Lower the dumbbells out to the sides in a wide arc until you feel a deep chest stretch, then bring them back together.",
+    "imageName": "dumbbell_fly"
+  },
+  {
+    "id": "exercise-105",
+    "name": "Band Pull-Apart",
+    "muscleGroup": "Shoulders",
+    "equipment": "Other",
+    "instructions": "Hold a resistance band at shoulder height with arms extended. Pull the band apart by squeezing your shoulder blades together, bringing your hands to your sides. Return with control. Excellent for rear delts and posture.",
+    "imageName": "band_pull_apart"
+  }
+]
