@@ -132,3 +132,61 @@ Up to 2 exercises per muscle group are selected from the library per day.
   deactivation of previous plan, empty library fallback, weekday index assignment
 - `setActivePlan` — activation and mutual deactivation
 - `deletePlan` — list removal, active-plan clearing, error handling
+
+## Session Tracking Feature
+
+### Files
+
+| File | Purpose |
+|---|---|
+| `FitnessTracker/Features/Session/SessionViewModel.swift` | `@Observable @MainActor` state-machine view model |
+| `FitnessTracker/Features/Session/ActiveSessionView.swift` | Live session screen with per-exercise set logging |
+| `FitnessTracker/Features/Session/Components/ExerciseSetRow.swift` | Single-set input row (weight, reps, RPE, PR badge) |
+| `FitnessTracker/Features/Session/Components/RestTimerView.swift` | Animated rest-timer overlay with progress ring |
+| `FitnessTracker/Features/Session/SessionSummaryView.swift` | Post-session summary with volume, duration, and PRs |
+| `FitnessTrackerTests/SessionViewModelTests.swift` | 20 unit tests for the view model |
+
+### SessionViewModel State Machine
+
+```
+idle ──startSession()──► active ──pauseSession()──► paused
+                              ◄──resumeSession()────────┘
+                              │
+                    finishSession()
+                              │
+                              ▼
+                           complete  ──► SessionSummaryView
+                              │
+                    abandonSession()
+                              ▼
+                           abandoned
+```
+
+### Key Responsibilities
+
+| Responsibility | Method |
+|---|---|
+| Create & persist `WorkoutSession` | `startSession()` |
+| Log a completed set with PR detection | `completeSet(exerciseIndex:setIndex:weightKg:reps:rpe:)` |
+| Persist final totals and write HealthKit workout | `finishSession()` |
+| Backfill previous-best data for inline display | `loadPreviousBests()` |
+| Manage rest timer (configurable, default 90 s) | `startRestTimer(duration:)` / `cancelRestTimer()` |
+
+### PR Detection Logic
+
+A personal record is flagged when `weightKg > previousBest.weightKg`. For an exercise with no recorded history, the first completed set is always marked a PR. The detected PR flag is persisted on the `LoggedSet.isPR` attribute.
+
+### Tests
+
+`FitnessTrackerTests/SessionViewModelTests.swift` covers:
+
+- Initial state (idle, zero elapsed, no rest timer)
+- `startSession` — state transition, idempotency, repository failure
+- `pauseSession` / `resumeSession` — state transitions, no-op guards
+- `finishSession` — transition to complete, summary data production, no-op when idle
+- `abandonSession` — state transition
+- `completeSet` — marks complete, updates weight, first-set PR, PR above/below best, volume accumulation, rest timer start, out-of-bounds safety, no-op when not active
+- `prCount` — reflects completed PR sets
+- Rest timer — cancel clears remaining, progress at 0 when inactive
+- `elapsedFormatted` — MM:SS format
+- `summaryData` — correct volume after completing sets
