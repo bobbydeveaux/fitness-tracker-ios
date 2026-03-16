@@ -27,6 +27,8 @@ import SwiftData
 ///        ├─ ProgressRepository          (protocol → SwiftDataProgressRepository)
 ///        ├─ ExerciseLibraryService      (in-memory JSON cache)
 ///        ├─ KeychainService             (Security framework wrapper)
+///        ├─ ClaudeAPIClient             (Anthropic Messages API wrapper)
+///        ├─ FallbackPlanProvider        (offline workout-plan template)
 ///        ├─ HealthKitService            (HKHealthStore wrapper)
 ///        ├─ NotificationScheduler       (UNUserNotificationCenter wrapper)
 ///        └─ CloudSyncService            (CloudKit availability & sync-state monitor)
@@ -63,6 +65,12 @@ final class AppEnvironment {
     /// Wraps the iOS Keychain for secure storage of the Claude API key.
     let keychainService: KeychainService
 
+    /// HTTP client for the Anthropic Messages API; generates AI-powered workout plans.
+    let claudeAPIClient: ClaudeAPIClient
+
+    /// Offline fallback; returns a hard-coded template plan when the Claude API is unavailable.
+    let fallbackPlanProvider: FallbackPlanProvider
+
     /// Wraps `HKHealthStore` for HealthKit reads and workout writes.
     let healthKitService: any HealthKitServiceProtocol
 
@@ -84,6 +92,8 @@ final class AppEnvironment {
     ///   - progressRepository: Repository conforming to `ProgressRepository`.
     ///   - exerciseLibraryService: Service for exercise JSON management.
     ///   - keychainService: Service for Keychain access.
+    ///   - claudeAPIClient: HTTP client for Claude API workout-plan generation.
+    ///   - fallbackPlanProvider: Offline template plan provider.
     ///   - healthKitService: Service for HealthKit access.
     ///   - notificationScheduler: Service for scheduling workout-reminder notifications.
     ///   - cloudSyncService: Service for CloudKit sync monitoring and toggle.
@@ -95,6 +105,8 @@ final class AppEnvironment {
         progressRepository: any ProgressRepository,
         exerciseLibraryService: ExerciseLibraryService = ExerciseLibraryService(),
         keychainService: KeychainService = KeychainService(),
+        claudeAPIClient: ClaudeAPIClient? = nil,
+        fallbackPlanProvider: FallbackPlanProvider = FallbackPlanProvider(),
         healthKitService: any HealthKitServiceProtocol = HealthKitService.shared,
         notificationScheduler: any NotificationSchedulerProtocol = NotificationScheduler.shared,
         cloudSyncService: any CloudSyncServiceProtocol = CloudSyncService()
@@ -106,6 +118,9 @@ final class AppEnvironment {
         self.progressRepository = progressRepository
         self.exerciseLibraryService = exerciseLibraryService
         self.keychainService = keychainService
+        // Build a ClaudeAPIClient backed by the provided KeychainService if none was injected.
+        self.claudeAPIClient = claudeAPIClient ?? ClaudeAPIClient(keychainService: keychainService)
+        self.fallbackPlanProvider = fallbackPlanProvider
         self.healthKitService = healthKitService
         self.notificationScheduler = notificationScheduler
         self.cloudSyncService = cloudSyncService
