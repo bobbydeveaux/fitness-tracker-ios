@@ -1,28 +1,37 @@
 import Foundation
 import SwiftData
 
-/// Tracks the user's activity streak (consecutive days with a completed workout or logged meal).
+// MARK: - Streak
+
+/// Tracks the user's consecutive-day activity streak.
 @Model
 final class Streak {
-    var id: UUID
+
+    @Attribute(.unique) var id: UUID
+
     var currentCount: Int
     var longestCount: Int
+
+    /// Date of the most recent activity. `nil` for a brand-new user with no activity.
     var lastActivityDate: Date?
-    var updatedAt: Date
+
+    // MARK: - Relationships
 
     var userProfile: UserProfile?
+
+    // MARK: - Initialisation
 
     init(
         id: UUID = UUID(),
         currentCount: Int = 0,
         longestCount: Int = 0,
         lastActivityDate: Date? = nil,
-        updatedAt: Date = Date()
+        userProfile: UserProfile? = nil
     ) {
         self.id = id
         self.currentCount = currentCount
         self.longestCount = longestCount
         self.lastActivityDate = lastActivityDate
-        self.updatedAt = updatedAt
+        self.userProfile = userProfile
     }
 }

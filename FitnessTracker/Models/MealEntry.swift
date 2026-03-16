@@ -1,40 +1,46 @@
 import Foundation
 import SwiftData
 
-/// Records a single food item consumed within a MealLog, with serving size and computed macros.
+// MARK: - MealEntry
+
+/// A single food item consumed as part of a `MealLog`.
 @Model
 final class MealEntry {
-    var id: UUID
-    /// Serving size in grams
+
+    @Attribute(.unique) var id: UUID
+
     var servingGrams: Double
-    /// Computed calories for this serving
-    var calories: Double
-    /// Computed protein in grams for this serving
-    var proteinGrams: Double
-    /// Computed carbohydrates in grams for this serving
-    var carbGrams: Double
-    /// Computed fat in grams for this serving
-    var fatGrams: Double
-    var loggedAt: Date
+
+    // Computed nutritional values for this serving
+    var kcal: Double
+    var proteinG: Double
+    var carbG: Double
+    var fatG: Double
+
+    // MARK: - Relationships
 
     var mealLog: MealLog?
     var foodItem: FoodItem?
 
+    // MARK: - Initialisation
+
     init(
         id: UUID = UUID(),
         servingGrams: Double,
-        calories: Double,
-        proteinGrams: Double,
-        carbGrams: Double,
-        fatGrams: Double,
-        loggedAt: Date = Date()
+        kcal: Double,
+        proteinG: Double,
+        carbG: Double,
+        fatG: Double,
+        mealLog: MealLog? = nil,
+        foodItem: FoodItem? = nil
     ) {
         self.id = id
         self.servingGrams = servingGrams
-        self.calories = calories
-        self.proteinGrams = proteinGrams
-        self.carbGrams = carbGrams
-        self.fatGrams = fatGrams
-        self.loggedAt = loggedAt
+        self.kcal = kcal
+        self.proteinG = proteinG
+        self.carbG = carbG
+        self.fatG = fatG
+        self.mealLog = mealLog
+        self.foodItem = foodItem
     }
 }

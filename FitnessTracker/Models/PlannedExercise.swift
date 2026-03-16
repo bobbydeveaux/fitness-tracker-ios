@@ -1,31 +1,42 @@
 import Foundation
 import SwiftData
 
-/// Prescribes a specific exercise within a WorkoutDay with target sets, reps, and RPE.
+// MARK: - PlannedExercise
+
+/// Associates an `Exercise` with a `WorkoutDay`, specifying prescribed sets, reps, and RPE.
 @Model
 final class PlannedExercise {
-    var id: UUID
+
+    @Attribute(.unique) var id: UUID
+
     var targetSets: Int
-    var targetReps: Int
-    /// Rate of perceived exertion target (1–10). Nil means no RPE target specified.
-    var targetRPE: Double?
-    /// Display order within the day
+    var targetReps: String   // e.g. "6-8" or "12"
+    var targetRPE: Double?   // Rate of Perceived Exertion (6-10), optional
+    /// Display/insertion order within the workout day.
     var sortOrder: Int
+
+    // MARK: - Relationships
 
     var workoutDay: WorkoutDay?
     var exercise: Exercise?
 
+    // MARK: - Initialisation
+
     init(
         id: UUID = UUID(),
         targetSets: Int,
-        targetReps: Int,
+        targetReps: String,
         targetRPE: Double? = nil,
-        sortOrder: Int = 0
+        sortOrder: Int = 0,
+        workoutDay: WorkoutDay? = nil,
+        exercise: Exercise? = nil
     ) {
         self.id = id
         self.targetSets = targetSets
         self.targetReps = targetReps
         self.targetRPE = targetRPE
         self.sortOrder = sortOrder
+        self.workoutDay = workoutDay
+        self.exercise = exercise
     }
 }

@@ -1,40 +1,48 @@
 import Foundation
 import SwiftData
 
-// MARK: - Supporting Enum
+// MARK: - BodyMetricType
 
 enum BodyMetricType: String, Codable {
     case weight
     case chest
     case waist
-    case hip
+    case hips
     case neck
     case thigh
     case arm
+    case bodyFatPercentage
 }
 
-// MARK: - BodyMetric Model
+// MARK: - BodyMetric
 
-/// A single body measurement data point captured on a given date.
+/// A single body measurement entry (e.g. weight, waist circumference).
 @Model
 final class BodyMetric {
-    var id: UUID
-    var metricType: BodyMetricType
-    /// Measurement value; unit depends on type (kg for weight, cm for circumferences)
-    var value: Double
-    @Attribute(.index) var recordedAt: Date
+
+    @Attribute(.unique) var id: UUID
+
+    @Attribute(.indexed) var date: Date
+    var type: BodyMetricType
+    var value: Double   // kg for weight; cm for measurements; % for body fat
+
+    // MARK: - Relationships
 
     var userProfile: UserProfile?
 
+    // MARK: - Initialisation
+
     init(
         id: UUID = UUID(),
-        metricType: BodyMetricType,
+        date: Date = .now,
+        type: BodyMetricType,
         value: Double,
-        recordedAt: Date = Date()
+        userProfile: UserProfile? = nil
     ) {
         self.id = id
-        self.metricType = metricType
+        self.date = date
+        self.type = type
         self.value = value
-        self.recordedAt = recordedAt
+        self.userProfile = userProfile
     }
 }

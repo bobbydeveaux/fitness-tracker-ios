@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 
-// MARK: - Supporting Enum
+// MARK: - MealType
 
 enum MealType: String, Codable {
     case breakfast
@@ -10,26 +10,35 @@ enum MealType: String, Codable {
     case snack
 }
 
-// MARK: - MealLog Model
+// MARK: - MealLog
 
-/// Groups all food entries for a single meal occasion on a given day.
+/// A daily meal container grouping one or more `MealEntry` items by meal type.
 @Model
 final class MealLog {
-    var id: UUID
-    /// Calendar date of this meal (time component should be normalised to midnight UTC)
-    @Attribute(.index) var date: Date
+
+    @Attribute(.unique) var id: UUID
+
+    @Attribute(.indexed) var date: Date
     var mealType: MealType
+
+    // MARK: - Relationships
+
+    var userProfile: UserProfile?
 
     @Relationship(deleteRule: .cascade, inverse: \MealEntry.mealLog)
     var entries: [MealEntry] = []
 
+    // MARK: - Initialisation
+
     init(
         id: UUID = UUID(),
         date: Date,
-        mealType: MealType
+        mealType: MealType,
+        userProfile: UserProfile? = nil
     ) {
         self.id = id
         self.date = date
         self.mealType = mealType
+        self.userProfile = userProfile
     }
 }

@@ -1,42 +1,52 @@
 import Foundation
 import SwiftData
 
-/// Records a single performed set during a WorkoutSession.
+// MARK: - LoggedSet
+
+/// A single set performed during a `WorkoutSession`.
 @Model
 final class LoggedSet {
-    var id: UUID
-    /// Weight lifted in kilograms
+
+    @Attribute(.unique) var id: UUID
+
+    var setIndex: Int
     var weightKg: Double
     var reps: Int
     /// Rate of perceived exertion (1–10). Nil if not recorded.
     var rpe: Double?
-    /// True when this set established a new personal record for the exercise
-    var isPR: Bool
     var isComplete: Bool
-    var performedAt: Date
-    /// Display/insertion order within the session
+    var isPR: Bool
+    /// Display/insertion order within the session.
     var sortOrder: Int
+
+    // MARK: - Relationships
 
     var session: WorkoutSession?
     var exercise: Exercise?
 
+    // MARK: - Initialisation
+
     init(
         id: UUID = UUID(),
+        setIndex: Int,
         weightKg: Double,
         reps: Int,
         rpe: Double? = nil,
-        isPR: Bool = false,
         isComplete: Bool = false,
-        performedAt: Date = Date(),
-        sortOrder: Int = 0
+        isPR: Bool = false,
+        sortOrder: Int = 0,
+        session: WorkoutSession? = nil,
+        exercise: Exercise? = nil
     ) {
         self.id = id
+        self.setIndex = setIndex
         self.weightKg = weightKg
         self.reps = reps
         self.rpe = rpe
-        self.isPR = isPR
         self.isComplete = isComplete
-        self.performedAt = performedAt
+        self.isPR = isPR
         self.sortOrder = sortOrder
+        self.session = session
+        self.exercise = exercise
     }
 }

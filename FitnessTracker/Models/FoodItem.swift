@@ -1,45 +1,53 @@
 import Foundation
 import SwiftData
 
+// MARK: - FoodItem
+
+/// Represents a food item either bundled as seed data or created by the user.
 @Model
 final class FoodItem {
-    var id: UUID
+
+    @Attribute(.unique) var id: UUID
+
     var name: String
-    /// Optional barcode (EAN-13 / UPC-A)
     var barcode: String?
-    /// Calories per 100 g
-    var caloriesPer100g: Double
-    /// Protein per 100 g
-    var proteinPer100g: Double
-    /// Carbohydrates per 100 g
-    var carbsPer100g: Double
-    /// Fat per 100 g
-    var fatPer100g: Double
-    /// True when the user created this entry rather than importing from a shared library
+
+    // Nutritional values per 100 g
+    var kcalPer100g: Double
+    var proteinG: Double
+    var carbG: Double
+    var fatG: Double
+
+    /// `true` for user-created items; `false` for seeded/bundled items.
     var isCustom: Bool
+
     var createdAt: Date
+
+    // MARK: - Relationships
 
     @Relationship(deleteRule: .nullify, inverse: \MealEntry.foodItem)
     var mealEntries: [MealEntry] = []
+
+    // MARK: - Initialisation
 
     init(
         id: UUID = UUID(),
         name: String,
         barcode: String? = nil,
-        caloriesPer100g: Double,
-        proteinPer100g: Double,
-        carbsPer100g: Double,
-        fatPer100g: Double,
+        kcalPer100g: Double,
+        proteinG: Double,
+        carbG: Double,
+        fatG: Double,
         isCustom: Bool = false,
-        createdAt: Date = Date()
+        createdAt: Date = .now
     ) {
         self.id = id
         self.name = name
         self.barcode = barcode
-        self.caloriesPer100g = caloriesPer100g
-        self.proteinPer100g = proteinPer100g
-        self.carbsPer100g = carbsPer100g
-        self.fatPer100g = fatPer100g
+        self.kcalPer100g = kcalPer100g
+        self.proteinG = proteinG
+        self.carbG = carbG
+        self.fatG = fatG
         self.isCustom = isCustom
         self.createdAt = createdAt
     }

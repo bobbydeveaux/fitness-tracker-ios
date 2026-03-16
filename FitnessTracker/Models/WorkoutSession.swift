@@ -1,50 +1,54 @@
 import Foundation
 import SwiftData
 
-// MARK: - Supporting Enum
+// MARK: - SessionStatus
 
 enum SessionStatus: String, Codable {
-    case idle
     case active
     case paused
     case complete
+    case abandoned
 }
 
-// MARK: - WorkoutSession Model
+// MARK: - WorkoutSession
 
-/// Represents a single gym session, progressing through a state machine: idle → active → paused → complete.
+/// Records a live or completed gym session, linked to a `WorkoutDay`.
 @Model
 final class WorkoutSession {
-    var id: UUID
-    @Attribute(.index) var startedAt: Date
-    var endedAt: Date?
+
+    @Attribute(.unique) var id: UUID
+
+    @Attribute(.indexed) var startedAt: Date
+    var completedAt: Date?
+    var durationSeconds: Int
+
+    var totalVolumeKg: Double
     var status: SessionStatus
-    /// Total duration in seconds (populated on completion)
-    var durationSeconds: Double?
-    /// Total volume lifted (kg × reps, summed across all sets)
-    var totalVolumeKg: Double?
-    var notes: String?
+
+    // MARK: - Relationships
 
     var workoutDay: WorkoutDay?
 
     @Relationship(deleteRule: .cascade, inverse: \LoggedSet.session)
-    var loggedSets: [LoggedSet] = []
+    var sets: [LoggedSet] = []
+
+    // MARK: - Initialisation
 
     init(
         id: UUID = UUID(),
-        startedAt: Date = Date(),
-        endedAt: Date? = nil,
-        status: SessionStatus = .idle,
-        durationSeconds: Double? = nil,
-        totalVolumeKg: Double? = nil,
-        notes: String? = nil
+        startedAt: Date = .now,
+        completedAt: Date? = nil,
+        durationSeconds: Int = 0,
+        totalVolumeKg: Double = 0,
+        status: SessionStatus = .active,
+        workoutDay: WorkoutDay? = nil
     ) {
         self.id = id
         self.startedAt = startedAt
-        self.endedAt = endedAt
-        self.status = status
+        self.completedAt = completedAt
         self.durationSeconds = durationSeconds
         self.totalVolumeKg = totalVolumeKg
-        self.notes = notes
+        self.status = status
+        self.workoutDay = workoutDay
     }
 }
