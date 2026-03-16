@@ -5,16 +5,22 @@ import SwiftData
 
 /// Main dashboard view shown after onboarding is complete.
 ///
-/// Displays the user's welcome banner, daily macro progress via
-/// `MacroSummaryBar`, daily target tiles, and a quick-navigation card that
-/// routes to the full `NutritionView`.
+/// Displays the user's welcome banner, weekly activity summary via
+/// `WeeklySummaryCard`, daily macro progress via `NutritionSummaryWidget`,
+/// daily target tiles, and a quick-add action strip for one-tap access to
+/// meal logging and workout tracking.
 struct DashboardView: View {
 
     @Environment(AppEnvironment.self) private var env
     @Query private var profiles: [UserProfile]
 
+    @State private var dashboardViewModel: DashboardViewModel?
     @State private var nutritionViewModel: NutritionViewModel?
+
+    // MARK: - Sheet / navigation state
+    @State private var showingAddMeal: Bool = false
     @State private var showingNutrition: Bool = false
+    @State private var showingWorkout: Bool = false
 
     private var profile: UserProfile? { profiles.first }
 
@@ -25,7 +31,12 @@ struct DashboardView: View {
                     if let profile {
                         WelcomeBannerView(profile: profile)
 
-                        // Live macro progress
+                        // Weekly activity summary
+                        if let dashboardViewModel {
+                            WeeklySummaryCard(stats: dashboardViewModel.weeklyStats)
+                        }
+
+                        // Live macro progress for today
                         if let nutritionViewModel {
                             NutritionSummaryWidget(
                                 viewModel: nutritionViewModel,
@@ -34,7 +45,14 @@ struct DashboardView: View {
                             )
                         }
 
+                        // Daily macro targets reference
                         DailyTargetsView(profile: profile)
+
+                        // Quick-add action strip
+                        QuickAddStrip(
+                            onLogMeal: { showingAddMeal = true },
+                            onLogWorkout: { showingWorkout = true }
+                        )
                     } else {
                         ContentUnavailableView(
                             "No Profile Found",
@@ -48,27 +66,122 @@ struct DashboardView: View {
             }
             .navigationTitle("Dashboard")
             .navigationBarTitleDisplayMode(.large)
+            // Navigate to full Nutrition screen
             .navigationDestination(isPresented: $showingNutrition) {
                 NutritionView(repository: env.nutritionRepository)
             }
+            // Navigate to Workout Plan screen
+            .navigationDestination(isPresented: $showingWorkout) {
+                WorkoutPlanView(repository: env.workoutRepository)
+            }
+            // Quick-add meal sheet
+            .sheet(isPresented: $showingAddMeal, onDismiss: {
+                Task {
+                    await nutritionViewModel?.loadTodaysLogs()
+                    await dashboardViewModel?.loadWeeklyStats()
+                }
+            }) {
+                if let nutritionViewModel {
+                    MealLogEntryView(repository: env.nutritionRepository) { food, grams, mealType in
+                        Task {
+                            await nutritionViewModel.addEntry(
+                                foodItem: food,
+                                servingGrams: grams,
+                                mealType: mealType
+                            )
+                        }
+                    }
+                }
+            }
             .task {
                 await env.healthKitService.requestAuthorisationIfNeeded()
-                setupNutritionViewModel()
+                setupViewModels()
+                await dashboardViewModel?.loadAll()
             }
             .onChange(of: profiles) { _, _ in
-                setupNutritionViewModel()
+                setupViewModels()
             }
         }
     }
 
     // MARK: - Private
 
-    private func setupNutritionViewModel() {
+    private func setupViewModels() {
+        if dashboardViewModel == nil {
+            dashboardViewModel = DashboardViewModel(
+                healthKitService: env.healthKitService,
+                nutritionRepository: env.nutritionRepository,
+                workoutRepository: env.workoutRepository
+            )
+        }
         if nutritionViewModel == nil {
             let vm = NutritionViewModel(repository: env.nutritionRepository)
             nutritionViewModel = vm
             Task { await vm.loadTodaysLogs() }
         }
+    }
+}
+
+// MARK: - QuickAddStrip
+
+/// A horizontal pair of prominent buttons providing one-tap entry into the
+/// most common logging flows: meal logging and workout recording.
+private struct QuickAddStrip: View {
+    let onLogMeal: () -> Void
+    let onLogWorkout: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Quick Add")
+                .font(.headline)
+
+            HStack(spacing: 12) {
+                QuickAddButton(
+                    title: "Log Meal",
+                    icon: "fork.knife",
+                    color: .orange,
+                    action: onLogMeal
+                )
+                QuickAddButton(
+                    title: "Log Workout",
+                    icon: "dumbbell.fill",
+                    color: .purple,
+                    action: onLogWorkout
+                )
+            }
+        }
+    }
+}
+
+// MARK: - QuickAddButton
+
+/// A single large-tap-target button inside `QuickAddStrip`.
+private struct QuickAddButton: View {
+    let title: String
+    let icon: String
+    let color: Color
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 10) {
+                Image(systemName: icon)
+                    .font(.title3)
+                    .foregroundStyle(color)
+                Text(title)
+                    .font(.subheadline.bold())
+                    .foregroundStyle(.primary)
+                Spacer()
+                Image(systemName: "plus.circle.fill")
+                    .foregroundStyle(color)
+            }
+            .padding(14)
+            .background(
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(Color(.secondarySystemBackground))
+            )
+        }
+        .buttonStyle(.plain)
     }
 }
 
