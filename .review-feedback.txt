@@ -1,62 +1,57 @@
 ## Code Review - Changes Requested
 
-The review is complete. This PR has a **blocking issue**: the entire feature implementation is missing. The PR only deletes a leftover metadata file from a prior task, while `OnboardingViewModel.swift` and all related code were never created.
-
----
-
 ## ❌ BLOCKING ISSUES FOUND
 
-**PR #16 — WIP: Implement HealthKitService singleton with permissions, read, and write**
+**PR #46 — feature/29-ios-fitness-tracker-app-sprint-3-issue-29**
 
 ---
 
 ### Summary
 
-This PR is in **DRAFT** state and contains **zero new code**. The only change is the deletion of `.claude-output.json` (a metadata file from a previous task). The `HealthKitService.swift` file remains an empty stub — no HealthKit implementation has been delivered.
+This PR contains **zero new code**. The only change is the deletion of `.claude-output.json` (a metadata artifact from a prior task). The entire feature required by issue #29 has not been implemented.
 
 ---
 
 ### BLOCKING: Core Functionality Not Implemented
 
-**File:** `FitnessTracker/Services/HealthKitService.swift`
+**Issue #29** requires `task-ios-fitness-tracker-app-feat-settings-3`: *Build SettingsView, NotificationSettingsView, and SettingsViewModel*
 
-The service is entirely a stub. Every acceptance criterion from issue #10 is unmet:
+None of the required files exist:
+
+| Required File | Status |
+|---|---|
+| `FitnessTracker/Features/Settings/SettingsView.swift` | ❌ Missing |
+| `FitnessTracker/Features/Settings/SettingsViewModel.swift` | ❌ Missing |
+| `FitnessTracker/Features/Settings/NotificationSettingsView.swift` | ❌ Missing |
+
+Every acceptance criterion is unmet:
 
 | Acceptance Criterion | Status |
 |---|---|
-| `requestAuthorisationIfNeeded()` requests the 3 HKQuantityTypes | ❌ Empty body |
-| `readDailyStats()` returns real data via `HKStatisticsCollectionQuery` | ❌ Returns zeroed `DailyStats()` |
-| `saveWorkout(duration:)` writes an `HKWorkout` with `.traditionalStrengthTraining` | ❌ Empty body |
-| `DashboardViewModel` integration with `readDailyStats()` | ❌ `DashboardViewModel` does not exist |
+| Appearance toggle persists and overrides `colorScheme` (dark default) | ❌ Not implemented |
+| `NotificationSettingsView` weekday grid + time picker triggers `NotificationScheduler.scheduleReminders` | ❌ Not implemented |
+| CloudKit sync row shows error banner when `CloudSyncService.syncState == .error` | ❌ Not implemented |
+| All settings survive app termination and restore on next launch | ❌ Not implemented |
 
-Specific missing implementation details:
-- No `import HealthKit` — the framework is never imported
-- No `HKHealthStore` instance created or referenced
-- `requestAuthorisationIfNeeded()` has an empty body; no permission request occurs
-- `readDailyStats()` always returns `DailyStats()` with all zeroes — no queries executed
-- `saveWorkout(duration:)` has an empty body; nothing is written to HealthKit
-- The `init()` is `internal` (not `private`), breaking the singleton contract — external code can bypass `.shared` and create additional instances
-- No `DashboardViewModel` exists to satisfy the fourth acceptance criterion
-
----
-
-### Additional Issues (Non-Blocking)
-
-**No tests for HealthKitService**
-There is no `HealthKitServiceTests.swift`. Given HealthKit requires a real device/entitlement for most operations, at minimum a mock/protocol abstraction should be present so the service can be tested with a test double.
-
-**`docsUpdated` is empty in the deleted `.claude-output.json`**
-While that file was from a prior task, this PR also doesn't update any documentation. If the LLD/HLD describe the HealthKit integration design, they should be confirmed accurate once implementation lands.
+Additionally, the dependencies this task relies on are also absent:
+- `FitnessTracker/Services/NotificationScheduler.swift` (issue #27) — does not exist
+- `FitnessTracker/Services/CloudSyncService.swift` (issue #28) — does not exist
 
 ---
 
 ### What Needs to Happen Before Merge
 
-1. Implement `HealthKitService.swift` with `import HealthKit`, an `HKHealthStore` property, and real logic in all three methods
-2. Make `init()` private so the singleton cannot be bypassed
-3. Create `DashboardViewModel` (or extend it if it exists elsewhere) to call `readDailyStats()` on scene foreground
-4. Add `HealthKitServiceTests.swift` with protocol-based mocking so the service logic is testable without a live device
-5. Move the PR out of DRAFT once the above is complete
+1. Implement `NotificationScheduler.swift` (or confirm issue #27 has landed separately) with `requestPermission()`, `scheduleReminders(days:time:)`, and `cancelAll()` methods
+2. Implement `CloudSyncService.swift` (or confirm issue #28 has landed) with iCloud availability detection and `CloudSyncState` publishing
+3. Implement `SettingsViewModel.swift` coordinating both services and persisting preferences to `UserDefaults`/SwiftData
+4. Implement `SettingsView.swift` with appearance toggle (dark default), CloudKit sync row with error banner
+5. Implement `NotificationSettingsView.swift` with multi-select weekday grid and `DatePicker` for reminder time
+6. Add tests covering at minimum: persistence of appearance setting, notification scheduling logic, and CloudKit availability detection
+
+**Action Required**: Please implement the missing feature before merging.
+
+---
+*Reviewed by code-reviewer agent*
 
 **Action Required**: Please address the blocking issues above before merging.
 
