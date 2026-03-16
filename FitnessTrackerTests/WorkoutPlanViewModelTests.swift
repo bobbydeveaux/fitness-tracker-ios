@@ -67,7 +67,7 @@ final class MockWorkoutRepository: WorkoutRepository, @unchecked Sendable {
 
     func fetchWorkoutSessions() async throws -> [WorkoutSession] {
         try maybeThrow()
-        return workoutSessions
+        return workoutSessions.sorted { $0.startedAt > $1.startedAt }
     }
 
     func fetchWorkoutSessions(from startDate: Date, to endDate: Date) async throws -> [WorkoutSession] {
@@ -150,6 +150,14 @@ final class WorkoutPlanViewModelTests: XCTestCase {
         WorkoutPlanViewModel(repository: repository)
     }
 
+    private func makePlan(
+        splitType: SplitType = .pushPullLegs,
+        daysPerWeek: Int = 6,
+        isActive: Bool = true
+    ) -> WorkoutPlan {
+        WorkoutPlan(splitType: splitType, daysPerWeek: daysPerWeek, isActive: isActive)
+    }
+
     // MARK: - Initial State
 
     func testInitialPlans_isEmpty() {
@@ -175,6 +183,11 @@ final class WorkoutPlanViewModelTests: XCTestCase {
     func testInitialErrorMessage_isNil() {
         let vm = makeViewModel()
         XCTAssertNil(vm.errorMessage)
+    }
+
+    func testInitialSortedDays_isEmpty() {
+        let vm = makeViewModel()
+        XCTAssertTrue(vm.sortedDays.isEmpty)
     }
 
     // MARK: - loadPlans
@@ -231,6 +244,138 @@ final class WorkoutPlanViewModelTests: XCTestCase {
         repo.shouldThrow = false
         await vm.loadPlans()
         XCTAssertNil(vm.errorMessage)
+    }
+
+    // MARK: - loadActivePlan – success
+
+    func testLoadActivePlan_noActivePlan_activePlanRemainsNil() async {
+        let repo = MockWorkoutRepository()
+        let vm = makeViewModel(repository: repo)
+
+        await vm.loadActivePlan()
+
+        XCTAssertNil(vm.activePlan)
+        XCTAssertFalse(vm.isLoading)
+        XCTAssertNil(vm.errorMessage)
+    }
+
+    func testLoadActivePlan_withActivePlan_setsActivePlan() async {
+        let repo = MockWorkoutRepository()
+        let plan = makePlan()
+        repo.workoutPlans.append(plan)
+
+        let vm = makeViewModel(repository: repo)
+        await vm.loadActivePlan()
+
+        XCTAssertNotNil(vm.activePlan)
+        XCTAssertEqual(vm.activePlan?.id, plan.id)
+    }
+
+    func testLoadActivePlan_inactivePlanIgnored() async {
+        let repo = MockWorkoutRepository()
+        let inactive = makePlan(isActive: false)
+        repo.workoutPlans.append(inactive)
+
+        let vm = makeViewModel(repository: repo)
+        await vm.loadActivePlan()
+
+        XCTAssertNil(vm.activePlan)
+    }
+
+    func testLoadActivePlan_isLoadingFalseAfterCompletion() async {
+        let repo = MockWorkoutRepository()
+        let vm = makeViewModel(repository: repo)
+
+        await vm.loadActivePlan()
+
+        XCTAssertFalse(vm.isLoading)
+    }
+
+    // MARK: - loadActivePlan – error
+
+    func testLoadActivePlan_onError_setsErrorMessage() async {
+        let repo = MockWorkoutRepository()
+        repo.shouldThrow = true
+
+        let vm = makeViewModel(repository: repo)
+        await vm.loadActivePlan()
+
+        XCTAssertNotNil(vm.errorMessage)
+        XCTAssertNil(vm.activePlan)
+    }
+
+    func testLoadActivePlan_clearsErrorOnSuccess() async {
+        let repo = MockWorkoutRepository()
+        repo.shouldThrow = true
+
+        let vm = makeViewModel(repository: repo)
+        await vm.loadActivePlan()
+        XCTAssertNotNil(vm.errorMessage)
+
+        repo.shouldThrow = false
+        await vm.loadActivePlan()
+        XCTAssertNil(vm.errorMessage)
+    }
+
+    // MARK: - sortedDays
+
+    func testSortedDays_sortedByWeekdayIndex() async {
+        let repo = MockWorkoutRepository()
+        let plan = makePlan()
+
+        let day1 = WorkoutDay(dayLabel: "Pull A", weekdayIndex: 3, workoutPlan: plan)
+        let day2 = WorkoutDay(dayLabel: "Push A", weekdayIndex: 2, workoutPlan: plan)
+        let day3 = WorkoutDay(dayLabel: "Legs A", weekdayIndex: 4, workoutPlan: plan)
+        plan.days = [day1, day2, day3]
+        repo.workoutPlans.append(plan)
+
+        let vm = makeViewModel(repository: repo)
+        await vm.loadActivePlan()
+
+        let indices = vm.sortedDays.map(\.weekdayIndex)
+        XCTAssertEqual(indices, [2, 3, 4])
+    }
+
+    func testSortedDays_emptyWhenNoPlan() {
+        let vm = makeViewModel()
+        XCTAssertTrue(vm.sortedDays.isEmpty)
+    }
+
+    // MARK: - splitLabel
+
+    func testSplitLabel_pushPullLegs() async {
+        let repo = MockWorkoutRepository()
+        repo.workoutPlans.append(makePlan(splitType: .pushPullLegs))
+
+        let vm = makeViewModel(repository: repo)
+        await vm.loadActivePlan()
+
+        XCTAssertEqual(vm.splitLabel, "Push / Pull / Legs")
+    }
+
+    func testSplitLabel_fullBody() async {
+        let repo = MockWorkoutRepository()
+        repo.workoutPlans.append(makePlan(splitType: .fullBody))
+
+        let vm = makeViewModel(repository: repo)
+        await vm.loadActivePlan()
+
+        XCTAssertEqual(vm.splitLabel, "Full Body")
+    }
+
+    func testSplitLabel_upperLower() async {
+        let repo = MockWorkoutRepository()
+        repo.workoutPlans.append(makePlan(splitType: .upperLower))
+
+        let vm = makeViewModel(repository: repo)
+        await vm.loadActivePlan()
+
+        XCTAssertEqual(vm.splitLabel, "Upper / Lower")
+    }
+
+    func testSplitLabel_emptyWhenNoPlan() {
+        let vm = makeViewModel()
+        XCTAssertEqual(vm.splitLabel, "")
     }
 
     // MARK: - generatePlan

@@ -47,6 +47,23 @@ final class WorkoutPlanViewModel {
     /// Non-nil when an error occurred during the last async operation.
     private(set) var errorMessage: String?
 
+    // MARK: - Derived
+
+    /// Workout days sorted by weekday index (Sunday = 1 … Saturday = 7).
+    var sortedDays: [WorkoutDay] {
+        (activePlan?.days ?? []).sorted { $0.weekdayIndex < $1.weekdayIndex }
+    }
+
+    /// Human-readable split label, e.g. "Push / Pull / Legs".
+    var splitLabel: String {
+        guard let plan = activePlan else { return "" }
+        switch plan.splitType {
+        case .pushPullLegs:  return "Push / Pull / Legs"
+        case .fullBody:      return "Full Body"
+        case .upperLower:    return "Upper / Lower"
+        }
+    }
+
     // MARK: - Dependencies
 
     private let repository: any WorkoutRepository
@@ -70,6 +87,18 @@ final class WorkoutPlanViewModel {
         defer { isLoading = false }
         do {
             plans = try await repository.fetchWorkoutPlans()
+            activePlan = try await repository.fetchActiveWorkoutPlan()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    /// Fetches the active workout plan from the repository.
+    func loadActivePlan() async {
+        isLoading = true
+        errorMessage = nil
+        defer { isLoading = false }
+        do {
             activePlan = try await repository.fetchActiveWorkoutPlan()
         } catch {
             errorMessage = error.localizedDescription
