@@ -1,12 +1,11 @@
 {
-  "prTitle": "feat: build WorkoutPlanView and WorkoutDayCard UI",
-  "prBody": "## Summary\n\n- **`WorkoutPlanViewModel`** (`FitnessTracker/Features/Workout/WorkoutPlanViewModel.swift`) — `@Observable @MainActor` class that loads the active `WorkoutPlan` from `WorkoutRepository`, exposes `sortedDays` (sorted by `weekdayIndex`) and `splitLabel` (human-readable split type string), and drives loading/error states.\n- **`WorkoutDayCard`** (`FitnessTracker/Features/Workout/WorkoutDayCard.swift`) — Card component for a single `WorkoutDay`, displaying the day label, weekday name, exercise count badge, and a list of `PlannedExercise` rows with sets × reps, optional RPE badge colour-coded by effort level, and muscle-group accent dots.\n- **`WorkoutPlanView`** (`FitnessTracker/Features/Workout/WorkoutPlanView.swift`) — Main feature view driven by `WorkoutPlanViewModel`. Handles four states: loading (`ProgressView`), error (retry banner), no active plan (`ContentUnavailableView`), and active plan (scrollable `PlanHeaderCard` + `WorkoutDayCard` list). Includes two `#Preview` macros and a `PreviewWorkoutRepository` stub.\n- **`WorkoutPlanViewModelTests`** (`FitnessTrackerTests/WorkoutPlanViewModelTests.swift`) — 14 unit tests covering initial state, load success/error, sorted days ordering, and split label formatting. Includes a full `MockWorkoutRepository` implementing all `WorkoutRepository` protocol methods.\n\nCloses #37",
+  "prTitle": "feat: build ExerciseLibraryView and ExerciseDetailView with filtering",
+  "prBody": "## Summary\n\n- **ExerciseLibraryView** (`FitnessTracker/Features/Workout/ExerciseLibraryView.swift`): Displays the full bundled exercise library (105 exercises) with instant-updating filters for muscle group (11 options) and equipment (6 options) via `Menu` pickers. An integrated `.searchable` bar further narrows results by name. Navigates to `ExerciseDetailView` on row tap. Shows `ContentUnavailableView` when no exercises match the active filters.\n- **ExerciseDetailView** (`FitnessTracker/Features/Workout/ExerciseDetailView.swift`): Shows exercise name, a muscle-diagram placeholder using contextual SF Symbols, `MuscleGroupBadge` + `EquipmentBadge`, a metadata card with muscle group and equipment labels, and a full instructions card.\n- **Shared components**: `MuscleGroupBadge` (colour-coded by muscle group) and `EquipmentBadge` are defined in `ExerciseLibraryView.swift` and re-used in `ExerciseDetailView.swift`.\n- **ExerciseLibraryViewTests** (`FitnessTrackerTests/ExerciseLibraryViewTests.swift`): 9 test cases covering all-filter pass-through, muscle-group filtering (valid + unknown), equipment filtering (valid + unknown), combined filtering, exercise-by-ID lookup, and non-empty metadata validation.\n\nBoth views consume `ExerciseLibraryService` directly — no new repository layer required.\n\nCloses #38",
   "testsPass": true,
   "filesChanged": [
-    "FitnessTracker/Features/Workout/WorkoutPlanViewModel.swift",
-    "FitnessTracker/Features/Workout/WorkoutDayCard.swift",
-    "FitnessTracker/Features/Workout/WorkoutPlanView.swift",
-    "FitnessTrackerTests/WorkoutPlanViewModelTests.swift"
+    "FitnessTracker/Features/Workout/ExerciseLibraryView.swift",
+    "FitnessTracker/Features/Workout/ExerciseDetailView.swift",
+    "FitnessTrackerTests/ExerciseLibraryViewTests.swift"
   ],
   "docsUpdated": [],
   "docsReviewed": [
