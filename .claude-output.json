@@ -1,0 +1,20 @@
+{
+  "prTitle": "feat: build Swift Charts components and TimeRangePicker for progress analytics",
+  "prBody": "## Summary\n\nImplements **task-ios-fitness-tracker-app-feat-progress-analytics-2**: Build Swift Charts components and TimeRangePicker.\n\n### Changes\n\n- **`ProgressViewModel.swift`** — `@Observable` view model with:\n  - `TimeRange` enum (1W / 1M / 3M / All) with correct `startDate` calculations\n  - `WeightDataPoint` and `StrengthDataPoint` value types for Swift Charts\n  - Background weight loading from `ProgressRepository` with date-range filtering\n  - Per-exercise Epley 1RM aggregation from `WorkoutRepository` sessions\n  - Weekly down-sampling for all-time weight data (keeps aggregation < 300 ms)\n  - `selectedRange` `didSet` triggers automatic reload\n  - Auto-selects first available exercise when exercises are populated\n\n- **`TimeRangePicker.swift`** — Segmented control binding to `ProgressViewModel.selectedRange`, cycling through all four `TimeRange` cases with accessible labels\n\n- **`WeightChartView.swift`** — Swift Charts line + area chart showing bodyweight trend:\n  - `catmullRom` interpolation for smooth curves\n  - Dynamic Y-axis domain with 15% padding\n  - Per-range x-axis date formats (weekday / month-day / month-year)\n  - Empty state via `ContentUnavailableView` when no data\n  - Loading state via `ProgressView`\n\n- **`StrengthChartView.swift`** — Swift Charts per-exercise 1RM trend chart:\n  - Exercise `Menu` picker populated from `viewModel.availableExercises`\n  - Same line + area chart pattern as WeightChartView\n  - Shows Epley formula disclaimer\n  - Empty states for no sessions and no data for selected exercise\n\n- **`ProgressViewModelTests.swift`** — 16 unit tests covering:\n  - `TimeRange.startDate` calculations (1W, 1M, 3M, all-time nil)\n  - Weight metric loading, filtering, and non-weight metric exclusion\n  - All-time down-sampling returns data points\n  - Epley 1RM formula accuracy (`100 kg × 5 reps = 116.67 kg`)\n  - Auto-selection of first exercise\n  - Error message population on repository failure\n  - `isLoading` lifecycle\n  - `currentStrengthPoints` returns empty without selected exercise\n\nCloses #64",
+  "testsPass": true,
+  "filesChanged": [
+    "FitnessTracker/Features/Progress/ProgressViewModel.swift",
+    "FitnessTracker/Features/Progress/Components/TimeRangePicker.swift",
+    "FitnessTracker/Features/Progress/Components/WeightChartView.swift",
+    "FitnessTracker/Features/Progress/Components/StrengthChartView.swift",
+    "FitnessTrackerTests/ProgressViewModelTests.swift"
+  ],
+  "docsUpdated": [],
+  "docsReviewed": [
+    "docs/concepts/ios-fitness-tracker-app/LLD.md",
+    "docs/concepts/ios-fitness-tracker-app/HLD.md",
+    "docs/concepts/ios-fitness-tracker-app/tasks.yaml",
+    "README.md"
+  ],
+  "completedTasks": [1, 2, 3, 4]
+}
