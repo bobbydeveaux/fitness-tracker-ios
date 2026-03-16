@@ -1,0 +1,218 @@
+Epics:
+- features:
+  - dependencies: []
+    description: Set up the Xcode project, AppEnvironment DI container, all SwiftData
+      models (UserProfile, FoodItem, MealLog, MealEntry, Exercise, WorkoutPlan, WorkoutDay,
+      PlannedExercise, WorkoutSession, LoggedSet, BodyMetric, Streak) with VersionedSchema,
+      seed bundled exercises.json and food JSON on first launch, and implement ExerciseLibraryService,
+      KeychainService, and repository protocol stubs.
+    estimatedComplexity: high
+    files:
+    - FitnessTracker/App/FitnessTrackerApp.swift
+    - FitnessTracker/App/AppEnvironment.swift
+    - FitnessTracker/Models/UserProfile.swift
+    - FitnessTracker/Models/FoodItem.swift
+    - FitnessTracker/Models/MealLog.swift
+    - FitnessTracker/Models/MealEntry.swift
+    - FitnessTracker/Models/Exercise.swift
+    - FitnessTracker/Models/WorkoutPlan.swift
+    - FitnessTracker/Models/WorkoutDay.swift
+    - FitnessTracker/Models/PlannedExercise.swift
+    - FitnessTracker/Models/WorkoutSession.swift
+    - FitnessTracker/Models/LoggedSet.swift
+    - FitnessTracker/Models/BodyMetric.swift
+    - FitnessTracker/Models/Streak.swift
+    - FitnessTracker/Models/AppSchema.swift
+    - FitnessTracker/Repositories/Protocols/UserProfileRepository.swift
+    - FitnessTracker/Repositories/Protocols/NutritionRepository.swift
+    - FitnessTracker/Repositories/Protocols/WorkoutRepository.swift
+    - FitnessTracker/Repositories/Protocols/ProgressRepository.swift
+    - FitnessTracker/Repositories/SwiftData/SwiftDataUserProfileRepository.swift
+    - FitnessTracker/Repositories/SwiftData/SwiftDataNutritionRepository.swift
+    - FitnessTracker/Repositories/SwiftData/SwiftDataWorkoutRepository.swift
+    - FitnessTracker/Repositories/SwiftData/SwiftDataProgressRepository.swift
+    - FitnessTracker/Services/ExerciseLibraryService.swift
+    - FitnessTracker/Services/KeychainService.swift
+    - FitnessTracker/Resources/exercises.json
+    id: ios-fitness-tracker-app-feat-foundation
+    name: App Foundation, SwiftData Schema & Services
+    project: ios-fitness-tracker-app
+    type: enabler
+  id: ios-fitness-tracker-app-epic-foundation
+  name: Foundation & Data Layer
+- features:
+  - dependencies:
+    - ios-fitness-tracker-app-feat-foundation
+    description: Implement the multi-step animated onboarding flow collecting age,
+      gender, height, weight, activity level, and fitness goal. Compute TDEE via Mifflin-St
+      Jeor using TDEECalculator and derive macro targets via MacroCalculator. Persist
+      the resulting UserProfile to SwiftData and route to the dashboard on completion.
+    estimatedComplexity: medium
+    files:
+    - FitnessTracker/Features/Onboarding/OnboardingView.swift
+    - FitnessTracker/Features/Onboarding/OnboardingViewModel.swift
+    - FitnessTracker/Features/Onboarding/Steps/WelcomeStepView.swift
+    - FitnessTracker/Features/Onboarding/Steps/BiometricsStepView.swift
+    - FitnessTracker/Features/Onboarding/Steps/ActivityGoalStepView.swift
+    - FitnessTracker/Features/Onboarding/Steps/SummaryStepView.swift
+    - FitnessTracker/Domain/TDEECalculator.swift
+    - FitnessTracker/Domain/MacroCalculator.swift
+    id: ios-fitness-tracker-app-feat-onboarding
+    name: Onboarding Wizard with TDEE & Macro Calculation
+    project: ios-fitness-tracker-app
+    type: feature
+  id: ios-fitness-tracker-app-epic-onboarding
+  name: Onboarding & Profile
+- features:
+  - dependencies:
+    - ios-fitness-tracker-app-feat-onboarding
+    - ios-fitness-tracker-app-feat-healthkit
+    description: Build the home screen DashboardViewModel that aggregates today's
+      consumed calories/macros from SwiftData, step count from HealthKit, and streak
+      state from StreakEngine into a single DashboardState. Render animated progress
+      rings for calories, protein, and steps, a streak counter, weekly summary cards,
+      and quick-add buttons for meals and workouts.
+    estimatedComplexity: medium
+    files:
+    - FitnessTracker/Features/Dashboard/DashboardView.swift
+    - FitnessTracker/Features/Dashboard/DashboardViewModel.swift
+    - FitnessTracker/Features/Dashboard/Components/ProgressRingView.swift
+    - FitnessTracker/Features/Dashboard/Components/StreakBannerView.swift
+    - FitnessTracker/Features/Dashboard/Components/WeeklySummaryCard.swift
+    - FitnessTracker/Domain/StreakEngine.swift
+    id: ios-fitness-tracker-app-feat-dashboard
+    name: Dashboard with Progress Rings & Streak
+    project: ios-fitness-tracker-app
+    type: feature
+  id: ios-fitness-tracker-app-epic-dashboard
+  name: Dashboard
+- features:
+  - dependencies:
+    - ios-fitness-tracker-app-feat-foundation
+    description: 'Implement the full NutritionModule: text search over the bundled
+      food index (FTS prefix-match), AVFoundation barcode scanner (EAN-13/UPC-A) with
+      local lookup, custom food creation form, meal template saving, and the meal
+      log entry flow. Daily macro totals update in real time via NutritionViewModel
+      and are reflected back to the dashboard state.'
+    estimatedComplexity: high
+    files:
+    - FitnessTracker/Features/Nutrition/NutritionView.swift
+    - FitnessTracker/Features/Nutrition/NutritionViewModel.swift
+    - FitnessTracker/Features/Nutrition/FoodSearchView.swift
+    - FitnessTracker/Features/Nutrition/BarcodeScannerView.swift
+    - FitnessTracker/Features/Nutrition/CustomFoodFormView.swift
+    - FitnessTracker/Features/Nutrition/MealLogEntryView.swift
+    - FitnessTracker/Features/Nutrition/MealTemplatesView.swift
+    - FitnessTracker/Features/Nutrition/Components/MacroSummaryBar.swift
+    - FitnessTracker/Services/BarcodeLookupService.swift
+    id: ios-fitness-tracker-app-feat-nutrition-logging
+    name: Meal Logging with Food Search, Barcode Scanner & Custom Foods
+    project: ios-fitness-tracker-app
+    type: feature
+  id: ios-fitness-tracker-app-epic-nutrition
+  name: Nutrition Tracking
+- features:
+  - dependencies:
+    - ios-fitness-tracker-app-feat-foundation
+    description: Implement ClaudeAPIClient to POST a structured prompt (goal, experience,
+      equipment, days/week) to the Claude API and parse the JSON WorkoutPlanResponse
+      into SwiftData WorkoutPlan/WorkoutDay/PlannedExercise entities. Show the generated
+      plan with split type and per-day exercise lists. Expose the bundled exercise
+      library with muscle-group and equipment filters. Fall back to FallbackPlanProvider
+      on API error or offline.
+    estimatedComplexity: high
+    files:
+    - FitnessTracker/Features/Workout/WorkoutPlanView.swift
+    - FitnessTracker/Features/Workout/WorkoutPlanViewModel.swift
+    - FitnessTracker/Features/Workout/ExerciseLibraryView.swift
+    - FitnessTracker/Features/Workout/ExerciseDetailView.swift
+    - FitnessTracker/Features/Workout/Components/WorkoutDayCard.swift
+    - FitnessTracker/Services/ClaudeAPIClient.swift
+    - FitnessTracker/Services/FallbackPlanProvider.swift
+    id: ios-fitness-tracker-app-feat-workout-plan
+    name: AI Workout Plan Generation & Exercise Library
+    project: ios-fitness-tracker-app
+    type: feature
+  - dependencies:
+    - ios-fitness-tracker-app-feat-workout-plan
+    - ios-fitness-tracker-app-feat-healthkit
+    description: Implement SessionViewModel as a state machine (idle → active → paused
+      → complete) managing an active WorkoutSession. Each exercise shows a sets table
+      where users log weight/reps/completion; previous session data is displayed inline.
+      A configurable rest timer (default 90 s) uses Timer.publish and triggers haptic
+      feedback on expiry. PRDetector flags new PRs on set save. On session finish,
+      persist volume/duration/PR summary to SwiftData and write an HKWorkout via HealthKitService.
+    estimatedComplexity: high
+    files:
+    - FitnessTracker/Features/Workout/SessionView.swift
+    - FitnessTracker/Features/Workout/SessionViewModel.swift
+    - FitnessTracker/Features/Workout/Components/ExerciseSetRow.swift
+    - FitnessTracker/Features/Workout/Components/RestTimerView.swift
+    - FitnessTracker/Features/Workout/Components/SessionSummaryView.swift
+    - FitnessTracker/Domain/PRDetector.swift
+    id: ios-fitness-tracker-app-feat-session-tracking
+    name: Gym Session Logging with Rest Timer & PR Detection
+    project: ios-fitness-tracker-app
+    type: feature
+  id: ios-fitness-tracker-app-epic-workout
+  name: Workout Planning & Session Tracking
+- features:
+  - dependencies:
+    - ios-fitness-tracker-app-feat-session-tracking
+    - ios-fitness-tracker-app-feat-nutrition-logging
+    description: Implement ProgressViewModel running volume and 1RM aggregation queries
+      on a background @ModelActor context. Render Swift Charts line graphs for bodyweight
+      trend, body measurements, and per-exercise 1RM estimate over selectable time
+      ranges (1W, 1M, 3M, All). Down-sample to weekly averages for All-time ranges
+      to keep render time under 300 ms. Include a body measurements log entry form.
+    estimatedComplexity: medium
+    files:
+    - FitnessTracker/Features/Progress/ProgressView.swift
+    - FitnessTracker/Features/Progress/ProgressViewModel.swift
+    - FitnessTracker/Features/Progress/Components/WeightChartView.swift
+    - FitnessTracker/Features/Progress/Components/StrengthChartView.swift
+    - FitnessTracker/Features/Progress/Components/MeasurementLogView.swift
+    - FitnessTracker/Features/Progress/Components/TimeRangePicker.swift
+    id: ios-fitness-tracker-app-feat-progress-analytics
+    name: Progress Charts for Weight, Measurements & Strength
+    project: ios-fitness-tracker-app
+    type: feature
+  id: ios-fitness-tracker-app-epic-progress
+  name: Progress & Analytics
+- features:
+  - dependencies:
+    - ios-fitness-tracker-app-feat-foundation
+    description: Implement HealthKitService singleton wrapping HKHealthStore. Request
+      minimal permissions for stepCount, activeEnergyBurned, and heartRate on first
+      foreground. Read daily stats via HKStatisticsCollectionQuery on sceneDidBecomeActive
+      and expose them to DashboardViewModel. Write HKWorkout with HKWorkoutActivityType.traditionalStrengthTraining
+      and duration on session completion.
+    estimatedComplexity: medium
+    files:
+    - FitnessTracker/Services/HealthKitService.swift
+    id: ios-fitness-tracker-app-feat-healthkit
+    name: HealthKit Integration
+    project: ios-fitness-tracker-app
+    type: enabler
+  - dependencies:
+    - ios-fitness-tracker-app-feat-foundation
+    description: Build the Settings screen with light/dark mode toggle (defaulting
+      dark), workout reminder configuration (days + time) backed by NotificationScheduler
+      using UNUserNotificationCenter local triggers, and an optional CloudKit sync
+      toggle gated on iCloud sign-in using SwiftData's ModelConfiguration CloudKit
+      option with last-write-wins conflict resolution. Also includes CloudSyncService
+      monitoring and error banner surfacing.
+    estimatedComplexity: medium
+    files:
+    - FitnessTracker/Features/Settings/SettingsView.swift
+    - FitnessTracker/Features/Settings/SettingsViewModel.swift
+    - FitnessTracker/Features/Settings/NotificationSettingsView.swift
+    - FitnessTracker/Services/NotificationScheduler.swift
+    - FitnessTracker/Services/CloudSyncService.swift
+    id: ios-fitness-tracker-app-feat-settings
+    name: Settings, Push Notifications & Optional CloudKit Sync
+    project: ios-fitness-tracker-app
+    type: feature
+  id: ios-fitness-tracker-app-epic-integrations
+  name: Integrations & Settings
+Version: v1alpha1
