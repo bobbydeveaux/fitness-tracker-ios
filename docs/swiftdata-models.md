@@ -86,6 +86,56 @@ development/testing — use `inMemory: true` via `AppSchema.makeContainer(inMemo
 - Cascade delete behaviour (MealLog → MealEntry, WorkoutSession → LoggedSet)
 - Full end-to-end test inserting one instance of every model type
 
+## Progress ViewModel
+
+`ProgressViewModel` (`FitnessTracker/Features/Progress/ProgressViewModel.swift`) is the
+`@Observable @MainActor` view model driving the Progress screen.
+
+### Responsibilities
+
+| Responsibility | Method |
+|---|---|
+| Load all body metrics for the current user | `loadMetrics(for:)` |
+| Save a new body measurement | `logMeasurement(type:value:date:for:)` |
+| Delete a body measurement | `deleteMetric(_:)` |
+
+### Computed Properties
+
+| Property | Description |
+|---|---|
+| `chartPoints` | `[ProgressChartPoint]` filtered to `selectedMetricType`, sorted ascending |
+| `filteredMetrics` | `[BodyMetric]` filtered to `selectedMetricType`, sorted descending (history list) |
+| `latestValue` | Most recent value for the selected type, or `nil` |
+| `unitLabel` | `"kg"` for weight, `"%"` for body fat, `"cm"` for all others |
+
+### Views
+
+| View | File |
+|---|---|
+| `ProgressView` | `FitnessTracker/Features/Progress/ProgressView.swift` |
+| `MeasurementLogView` | `FitnessTracker/Features/Progress/MeasurementLogView.swift` |
+
+`ProgressView` assembles a metric-type chip picker, a `MetricLineChart` (Swift Charts),
+a latest-value summary tile, and a swipe-to-delete history list.
+
+`MeasurementLogView` is a modal `Form` with a `BodyMetricType` picker, a decimal value
+field with a dynamic unit label, and a `DatePicker` constrained to past dates.
+
+### Tests
+
+`FitnessTrackerTests/ProgressViewModelTests.swift` covers:
+
+- Initial state assertions (metrics empty, flags false)
+- `loadMetrics` — populates metrics, error handling, clears error on retry
+- `chartPoints` — filters to selected type, sorts ascending, empty state
+- `filteredMetrics` — filters to selected type, sorts descending
+- `latestValue` — nil when empty, most recent value
+- `unitLabel` — kg / % / cm by type
+- `logMeasurement` — appends metric, saving flag, error handling
+- `deleteMetric` — removes metric, saving flag, error handling
+
+---
+
 ## WorkoutPlan ViewModel
 
 `WorkoutPlanViewModel` (`FitnessTracker/Features/Workout/WorkoutPlanViewModel.swift`) is the
