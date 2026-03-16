@@ -1,6 +1,6 @@
 ## Code Review - Changes Requested
 
-The review is complete. The PR is blocked because **no implementation exists** — it's an empty WIP branch with zero code changes. The review JSON has been written to `/workspace/.claude-review.json` with `changes_requested` and `hasBlockingIssues: true`.
+**Decision: ❌ CHANGES REQUESTED** — Blocking issue: the PR is empty of any implementation for its stated task. No functional code was added; the sole change is deletion of an unrelated metadata file. This must not be merged until the `SessionView`, SwiftData persistence, and HealthKit wiring from issue #62 are actually implemented.
 
 **Action Required**: Please address the blocking issues above before merging.
 

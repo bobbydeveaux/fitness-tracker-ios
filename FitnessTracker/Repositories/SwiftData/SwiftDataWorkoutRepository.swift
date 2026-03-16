@@ -94,7 +94,7 @@ public actor SwiftDataWorkoutRepository: WorkoutRepository {
             modelContext.insert(set)
         }
         session.sets.append(set)
-        set.workoutSession = session
+        set.session = session
         try modelContext.save()
     }
 }

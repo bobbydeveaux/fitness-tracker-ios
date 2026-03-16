@@ -132,3 +132,59 @@ Up to 2 exercises per muscle group are selected from the library per day.
   deactivation of previous plan, empty library fallback, weekday index assignment
 - `setActivePlan` — activation and mutual deactivation
 - `deletePlan` — list removal, active-plan clearing, error handling
+
+## SessionView & SessionViewModel
+
+`SessionView` (`FitnessTracker/Features/Workout/SessionView.swift`) is the primary UI for
+conducting a live workout session. `SessionViewModel` (`SessionViewModel.swift`) is its
+`@Observable @MainActor` state machine.
+
+### SessionViewModel Lifecycle
+
+| Phase | Trigger |
+|---|---|
+| `idle` | Initial state |
+| `active` | `startSession(day:exercises:previousSetsMap:)` |
+| `paused` | `pauseSession()` |
+| `active` | `resumeSession()` |
+| `complete` | `finishSession()` |
+
+### Responsibilities
+
+| Responsibility | Method |
+|---|---|
+| Start a session and save to SwiftData | `startSession(day:exercises:previousSetsMap:)` |
+| Pause the session (freeze timers) | `pauseSession()` |
+| Resume from pause | `resumeSession()` |
+| Finish, persist to SwiftData + HealthKit | `finishSession()` |
+| Discard session without summary | `abandonSession()` |
+| Mark a set complete, detect PRs, start rest timer | `logSet(_:exerciseID:)` |
+| Append a blank set row to an exercise | `addSet(to:)` |
+| Skip the active rest countdown | `skipRest()` |
+
+### SwiftData Persistence
+
+`finishSession()` persists the completed `WorkoutSession` (with `status = .complete`,
+`completedAt`, `durationSeconds`, `totalVolumeKg`) via `WorkoutRepository.saveWorkoutSession(_:)`.
+Each individual set is saved during the session via `WorkoutRepository.logSet(_:for:)`.
+
+### HealthKit Integration
+
+`finishSession()` calls `HealthKitService.saveWorkout(duration:)` which writes an
+`HKWorkout` with `.traditionalStrengthTraining` activity type. Errors are non-fatal —
+the app degrades gracefully when HealthKit is unavailable (e.g. simulator, iPad).
+
+### Tests
+
+`FitnessTrackerTests/SessionViewModelTests.swift` covers:
+
+- Initial state assertions (phase, activeExercises, timers, summary)
+- `startSession` — phase transition, exercise list population, set-row count,
+  previous-sets map propagation, repository persistence, error handling
+- `pauseSession` / `resumeSession` — phase transitions and guards
+- `addSet` — appends row, no-op for unknown exercise IDs
+- `logSet` — marks row complete, starts rest timer, persists to repository
+- `skipRest` — clears rest timer state
+- `finishSession` — phase transition, summary population, SwiftData + HealthKit persistence,
+  volume calculation, idle guard
+- `abandonSession` — phase reset, abandoned status persistence

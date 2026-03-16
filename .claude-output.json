@@ -1,0 +1,23 @@
+{
+  "prTitle": "feat: compose SessionView and wire SwiftData + HealthKit persistence",
+  "prBody": "## Summary\n\n- **SessionView** (`FitnessTracker/Features/Workout/SessionView.swift`): Full live-session UI with scrollable exercise list (sets/reps/weight), inline rest-timer bar, pause/resume toolbar, finish/abandon flow, and `SessionSummaryView` sheet on completion.\n- **SessionViewModel** (`FitnessTracker/Features/Workout/SessionViewModel.swift`): `@Observable @MainActor` state machine managing the `idle → active → paused → complete` lifecycle, per-set PR detection via `PRDetector`, elapsed-time ticker, and rest-timer countdown.\n- **SwiftData persistence**: `WorkoutSession` is created on session start and updated on pause, resume, finish, and abandon. Each `LoggedSet` is saved immediately when the user marks a set complete via `WorkoutRepository.logSet(_:for:)`. Fixed a property-name bug in `SwiftDataWorkoutRepository` (`set.workoutSession` → `set.session`).\n- **HealthKit integration**: `finishSession()` calls `HealthKitService.saveWorkout(duration:)` to write an `HKWorkout` with `.traditionalStrengthTraining` activity type. Degrades gracefully when HealthKit is unavailable.\n- **Tests** (`SessionViewModelTests.swift`): 30+ unit tests covering all lifecycle transitions, set management, persistence, HealthKit wiring, and error-path handling.\n- **Docs** updated: `docs/swiftdata-models.md` now documents the SessionView/SessionViewModel architecture, lifecycle table, responsibility table, and test coverage.\n\nCloses #62",
+  "testsPass": true,
+  "filesChanged": [
+    "FitnessTracker/Domain/PRDetector.swift",
+    "FitnessTracker/Features/Workout/Components/ExerciseSetRow.swift",
+    "FitnessTracker/Features/Workout/Components/RestTimerView.swift",
+    "FitnessTracker/Features/Workout/Components/SessionSummaryView.swift",
+    "FitnessTracker/Features/Workout/SessionView.swift",
+    "FitnessTracker/Features/Workout/SessionViewModel.swift",
+    "FitnessTracker/Repositories/SwiftData/SwiftDataWorkoutRepository.swift",
+    "FitnessTrackerTests/SessionViewModelTests.swift"
+  ],
+  "docsUpdated": [
+    "docs/swiftdata-models.md"
+  ],
+  "docsReviewed": [
+    "docs/swiftdata-models.md",
+    "docs/concepts"
+  ],
+  "completedTasks": [1, 2, 3, 4]
+}
