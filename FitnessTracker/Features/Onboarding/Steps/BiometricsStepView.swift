@@ -2,17 +2,11 @@ import SwiftUI
 
 // MARK: - BiometricsStepView
 
-/// Onboarding step 2 — collects the user's biometric data.
+/// Second onboarding step: collects name, age, gender, height, and weight.
 ///
-/// Fields:
-/// - **Name** — plain text field.
-/// - **Age** — numeric stepper (18–100).
-/// - **Gender** — segmented picker (male / female).
-/// - **Height** — decimal text field in centimetres (100–250 cm).
-/// - **Weight** — decimal text field in kilograms (30–300 kg).
-///
-/// All interactive controls write directly to the bound `OnboardingViewModel`.
-/// The "Next" button is disabled until `viewModel.isBiometricsValid` is `true`.
+/// Uses numeric keyboards for height and weight fields, Steppers for age,
+/// and a Picker for gender. All interactive controls bind directly to the
+/// shared `OnboardingViewModel`.
 struct BiometricsStepView: View {
 
     @Bindable var viewModel: OnboardingViewModel
@@ -21,29 +15,34 @@ struct BiometricsStepView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 28) {
 
-                // MARK: Header
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("About You")
+                // Header
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Tell Us About You")
                         .font(.title.bold())
-                    Text("Help us personalise your TDEE and macro targets.")
+                    Text("We use this to calculate your personalised calorie and macro targets.")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
 
-                // MARK: Name
-                LabeledContent("Name") {
+                // Name
+                VStack(alignment: .leading, spacing: 6) {
+                    Label("Name", systemImage: "person")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.secondary)
                     TextField("Your name", text: $viewModel.name)
                         .textContentType(.name)
-                        .autocorrectionDisabled()
-                        .multilineTextAlignment(.trailing)
+                        .textInputAutocapitalization(.words)
+                        .padding()
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color(.secondarySystemBackground))
+                        )
                 }
 
-                Divider()
-
-                // MARK: Gender
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Gender")
-                        .font(.subheadline)
+                // Gender
+                VStack(alignment: .leading, spacing: 6) {
+                    Label("Biological Sex", systemImage: "person.2")
+                        .font(.subheadline.weight(.semibold))
                         .foregroundStyle(.secondary)
                     Picker("Gender", selection: $viewModel.gender) {
                         Text("Male").tag(BiologicalSex.male)
@@ -52,91 +51,69 @@ struct BiometricsStepView: View {
                     .pickerStyle(.segmented)
                 }
 
-                Divider()
-
-                // MARK: Age
-                Stepper(value: $viewModel.age, in: 18...100) {
-                    HStack {
-                        Text("Age")
-                        Spacer()
-                        Text("\(viewModel.age) yrs")
-                            .foregroundStyle(.secondary)
-                            .monospacedDigit()
-                    }
+                // Age
+                VStack(alignment: .leading, spacing: 6) {
+                    Label("Age", systemImage: "calendar")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                    Stepper(
+                        "\(viewModel.age) years",
+                        value: $viewModel.age,
+                        in: 10...120
+                    )
+                    .padding()
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color(.secondarySystemBackground))
+                    )
                 }
 
-                Divider()
-
-                // MARK: Height
-                LabeledContent {
-                    HStack(spacing: 4) {
-                        TextField("170", value: $viewModel.heightCm, format: .number)
-                            .keyboardType(.decimalPad)
-                            .multilineTextAlignment(.trailing)
-                            .frame(width: 70)
+                // Height
+                VStack(alignment: .leading, spacing: 6) {
+                    Label("Height", systemImage: "ruler")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                    HStack {
+                        TextField(
+                            "e.g. 175",
+                            value: $viewModel.heightCm,
+                            format: .number.precision(.fractionLength(0...1))
+                        )
+                        .keyboardType(.decimalPad)
+                        .padding()
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color(.secondarySystemBackground))
+                        )
                         Text("cm")
                             .foregroundStyle(.secondary)
                     }
-                } label: {
-                    Text("Height")
                 }
 
-                heightWarning
-
-                Divider()
-
-                // MARK: Weight
-                LabeledContent {
-                    HStack(spacing: 4) {
-                        TextField("70", value: $viewModel.weightKg, format: .number)
-                            .keyboardType(.decimalPad)
-                            .multilineTextAlignment(.trailing)
-                            .frame(width: 70)
+                // Weight
+                VStack(alignment: .leading, spacing: 6) {
+                    Label("Weight", systemImage: "scalemass")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                    HStack {
+                        TextField(
+                            "e.g. 70",
+                            value: $viewModel.weightKg,
+                            format: .number.precision(.fractionLength(0...1))
+                        )
+                        .keyboardType(.decimalPad)
+                        .padding()
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color(.secondarySystemBackground))
+                        )
                         Text("kg")
                             .foregroundStyle(.secondary)
                     }
-                } label: {
-                    Text("Weight")
                 }
-
-                weightWarning
-
-                Spacer(minLength: 32)
-
-                // MARK: Next button
-                Button(action: viewModel.advance) {
-                    Text("Next")
-                        .font(.headline)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(viewModel.isBiometricsValid ? Color.accentColor : Color.secondary.opacity(0.3))
-                        .foregroundStyle(viewModel.isBiometricsValid ? .white : .secondary)
-                        .clipShape(RoundedRectangle(cornerRadius: 14))
-                }
-                .disabled(!viewModel.isBiometricsValid)
-                .accessibilityLabel("Next")
             }
-            .padding(24)
-        }
-    }
-
-    // MARK: - Validation Hints
-
-    @ViewBuilder
-    private var heightWarning: some View {
-        if viewModel.heightCm != 0 && !(100...250).contains(viewModel.heightCm) {
-            Text("Please enter a height between 100 and 250 cm.")
-                .font(.caption)
-                .foregroundStyle(.red)
-        }
-    }
-
-    @ViewBuilder
-    private var weightWarning: some View {
-        if viewModel.weightKg != 0 && !(30...300).contains(viewModel.weightKg) {
-            Text("Please enter a weight between 30 and 300 kg.")
-                .font(.caption)
-                .foregroundStyle(.red)
+            .padding(.horizontal, 24)
+            .padding(.vertical, 16)
         }
     }
 }
@@ -144,13 +121,10 @@ struct BiometricsStepView: View {
 // MARK: - Preview
 
 #Preview {
-    BiometricsStepView(viewModel: {
-        let vm = OnboardingViewModel()
-        vm.name = "Alex"
-        vm.age = 28
-        vm.gender = .female
-        vm.heightCm = 165
-        vm.weightKg = 62
-        return vm
-    }())
+    let env = AppEnvironment.makeProductionEnvironment()
+    let vm = OnboardingViewModel(
+        repository: env.userProfileRepository,
+        context: env.modelContainer.mainContext
+    )
+    return BiometricsStepView(viewModel: vm)
 }

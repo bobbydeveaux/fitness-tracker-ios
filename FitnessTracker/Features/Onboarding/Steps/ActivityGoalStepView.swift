@@ -2,10 +2,10 @@ import SwiftUI
 
 // MARK: - ActivityGoalStepView
 
-/// Onboarding step 3 — lets the user choose their activity level and fitness goal.
+/// Third onboarding step: lets the user pick their activity level and fitness goal.
 ///
-/// Both pickers write directly to the bound `OnboardingViewModel`, which
-/// recomputes the live TDEE and macro preview shown on the following Summary step.
+/// Presents a visual card list for `ActivityLevel` and a segmented picker for
+/// `FitnessGoal`. Both bind directly to the shared `OnboardingViewModel`.
 struct ActivityGoalStepView: View {
 
     @Bindable var viewModel: OnboardingViewModel
@@ -14,133 +14,134 @@ struct ActivityGoalStepView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 28) {
 
-                // MARK: Header
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Activity & Goals")
+                // Header
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Activity & Goal")
                         .font(.title.bold())
-                    Text("We use this to fine-tune your daily calorie target.")
+                    Text("How active are you, and what would you like to achieve?")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
 
-                // MARK: Activity Level
+                // Activity Level
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("How active are you?")
-                        .font(.headline)
+                    Label("Weekly Activity", systemImage: "bolt.fill")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.secondary)
 
                     ForEach(ActivityLevel.allCases, id: \.self) { level in
-                        ActivityOptionRow(
+                        ActivityLevelCard(
                             level: level,
                             isSelected: viewModel.activityLevel == level
-                        )
-                        .onTapGesture { viewModel.activityLevel = level }
+                        ) {
+                            viewModel.activityLevel = level
+                        }
                     }
                 }
 
-                Divider()
-
-                // MARK: Fitness Goal
+                // Fitness Goal
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("What's your primary goal?")
-                        .font(.headline)
+                    Label("Fitness Goal", systemImage: "target")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.secondary)
 
-                    ForEach(FitnessGoal.allCases, id: \.self) { goal in
-                        GoalOptionRow(
-                            goal: goal,
-                            isSelected: viewModel.goal == goal
-                        )
-                        .onTapGesture { viewModel.goal = goal }
+                    ForEach(FitnessGoal.allCases, id: \.self) { fitnessGoal in
+                        GoalCard(
+                            goal: fitnessGoal,
+                            isSelected: viewModel.goal == fitnessGoal
+                        ) {
+                            viewModel.goal = fitnessGoal
+                        }
                     }
                 }
-
-                Spacer(minLength: 32)
-
-                // MARK: Next button
-                Button(action: viewModel.advance) {
-                    Text("Next")
-                        .font(.headline)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.accentColor)
-                        .foregroundStyle(.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 14))
-                }
-                .accessibilityLabel("Next")
             }
-            .padding(24)
+            .padding(.horizontal, 24)
+            .padding(.vertical, 16)
         }
     }
 }
 
-// MARK: - ActivityOptionRow
+// MARK: - ActivityLevelCard
 
-private struct ActivityOptionRow: View {
+private struct ActivityLevelCard: View {
     let level: ActivityLevel
     let isSelected: Bool
+    let onTap: () -> Void
 
     var body: some View {
-        HStack(spacing: 14) {
-            Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                .foregroundStyle(isSelected ? .tint : .secondary)
-                .imageScale(.large)
-                .accessibilityHidden(true)
+        Button(action: onTap) {
+            HStack(spacing: 12) {
+                Image(systemName: level.icon)
+                    .frame(width: 24)
+                    .foregroundStyle(isSelected ? .white : .tint)
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(level.displayName)
-                    .font(.subheadline.bold())
-                Text(level.description)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(level.displayName)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(isSelected ? .white : .primary)
+                    Text(level.description)
+                        .font(.caption)
+                        .foregroundStyle(isSelected ? .white.opacity(0.8) : .secondary)
+                }
+
+                Spacer()
+
+                if isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(.white)
+                }
             }
+            .padding()
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(isSelected ? Color.accentColor : Color(.secondarySystemBackground))
+            )
         }
-        .padding(12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(isSelected ? Color.accentColor.opacity(0.08) : Color(.secondarySystemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 10))
-        .overlay(
-            RoundedRectangle(cornerRadius: 10)
-                .stroke(isSelected ? Color.accentColor : Color.clear, lineWidth: 1.5)
-        )
-        .accessibilityElement(children: .combine)
-        .accessibilityAddTraits(isSelected ? .isSelected : [])
+        .buttonStyle(.plain)
     }
 }
 
-// MARK: - GoalOptionRow
+// MARK: - GoalCard
 
-private struct GoalOptionRow: View {
+private struct GoalCard: View {
     let goal: FitnessGoal
     let isSelected: Bool
+    let onTap: () -> Void
 
     var body: some View {
-        HStack(spacing: 14) {
-            Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                .foregroundStyle(isSelected ? .tint : .secondary)
-                .imageScale(.large)
-                .accessibilityHidden(true)
+        Button(action: onTap) {
+            HStack(spacing: 12) {
+                Image(systemName: goal.icon)
+                    .frame(width: 24)
+                    .foregroundStyle(isSelected ? .white : goal.color)
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(goal.displayName)
-                    .font(.subheadline.bold())
-                Text(goal.description)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(goal.displayName)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(isSelected ? .white : .primary)
+                    Text(goal.description)
+                        .font(.caption)
+                        .foregroundStyle(isSelected ? .white.opacity(0.8) : .secondary)
+                }
+
+                Spacer()
+
+                if isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(.white)
+                }
             }
+            .padding()
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(isSelected ? goal.color : Color(.secondarySystemBackground))
+            )
         }
-        .padding(12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(isSelected ? Color.accentColor.opacity(0.08) : Color(.secondarySystemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 10))
-        .overlay(
-            RoundedRectangle(cornerRadius: 10)
-                .stroke(isSelected ? Color.accentColor : Color.clear, lineWidth: 1.5)
-        )
-        .accessibilityElement(children: .combine)
-        .accessibilityAddTraits(isSelected ? .isSelected : [])
+        .buttonStyle(.plain)
     }
 }
 
-// MARK: - ActivityLevel + CaseIterable display helpers
+// MARK: - ActivityLevel Display Helpers
 
 extension ActivityLevel: CaseIterable {
     public static var allCases: [ActivityLevel] {
@@ -160,15 +161,25 @@ extension ActivityLevel: CaseIterable {
     var description: String {
         switch self {
         case .sedentary:        return "Little or no exercise"
-        case .lightlyActive:    return "Light exercise 1–3 days/week"
-        case .moderatelyActive: return "Moderate exercise 3–5 days/week"
-        case .veryActive:       return "Hard exercise 6–7 days/week"
-        case .extraActive:      return "Twice/day training or physical job"
+        case .lightlyActive:    return "1–3 days/week"
+        case .moderatelyActive: return "3–5 days/week"
+        case .veryActive:       return "6–7 days/week"
+        case .extraActive:      return "Twice a day or physical job"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .sedentary:        return "sofa.fill"
+        case .lightlyActive:    return "figure.walk"
+        case .moderatelyActive: return "figure.run"
+        case .veryActive:       return "figure.hiking"
+        case .extraActive:      return "flame.fill"
         }
     }
 }
 
-// MARK: - FitnessGoal + CaseIterable display helpers
+// MARK: - FitnessGoal Display Helpers
 
 extension FitnessGoal: CaseIterable {
     public static var allCases: [FitnessGoal] {
@@ -185,9 +196,25 @@ extension FitnessGoal: CaseIterable {
 
     var description: String {
         switch self {
-        case .cut:      return "500 kcal deficit — approx. 0.5 kg/week loss"
-        case .maintain: return "Match your maintenance calories"
-        case .bulk:     return "300 kcal surplus — steady muscle gain"
+        case .cut:      return "Caloric deficit — burn fat, preserve muscle"
+        case .maintain: return "Maintenance calories — sustain current physique"
+        case .bulk:     return "Caloric surplus — fuel muscle growth"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .cut:      return "arrow.down.circle.fill"
+        case .maintain: return "equal.circle.fill"
+        case .bulk:     return "arrow.up.circle.fill"
+        }
+    }
+
+    var color: Color {
+        switch self {
+        case .cut:      return .blue
+        case .maintain: return .green
+        case .bulk:     return .orange
         }
     }
 }
@@ -195,10 +222,10 @@ extension FitnessGoal: CaseIterable {
 // MARK: - Preview
 
 #Preview {
-    ActivityGoalStepView(viewModel: {
-        let vm = OnboardingViewModel()
-        vm.activityLevel = .moderatelyActive
-        vm.goal = .cut
-        return vm
-    }())
+    let env = AppEnvironment.makeProductionEnvironment()
+    let vm = OnboardingViewModel(
+        repository: env.userProfileRepository,
+        context: env.modelContainer.mainContext
+    )
+    return ActivityGoalStepView(viewModel: vm)
 }

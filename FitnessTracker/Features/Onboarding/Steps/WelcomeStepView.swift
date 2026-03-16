@@ -2,72 +2,62 @@ import SwiftUI
 
 // MARK: - WelcomeStepView
 
-/// The first step of the onboarding wizard — introduces the app with branding
-/// and a single call-to-action button that advances to the biometrics step.
+/// First onboarding step: branding and call-to-action.
 ///
-/// Accepts an `OnboardingViewModel` binding so the parent `OnboardingView`
-/// controls the advance action uniformly through the ViewModel.
+/// Renders the app logo, name, and a brief value proposition to
+/// motivate the user to begin the setup wizard.
 struct WelcomeStepView: View {
-
-    @Bindable var viewModel: OnboardingViewModel
 
     var body: some View {
         VStack(spacing: 32) {
             Spacer()
 
-            // MARK: Branding
-            VStack(spacing: 16) {
-                Image(systemName: "figure.run.circle.fill")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 100, height: 100)
-                    .foregroundStyle(.tint)
-                    .accessibilityHidden(true)
+            // App icon / branding
+            Image(systemName: "figure.strengthtraining.traditional")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 100, height: 100)
+                .foregroundStyle(.tint)
+                .padding(24)
+                .background(
+                    Circle()
+                        .fill(.tint.opacity(0.12))
+                )
 
-                Text("Fitness Tracker")
+            // Heading
+            VStack(spacing: 12) {
+                Text("Welcome to\nFitness Tracker")
                     .font(.largeTitle.bold())
+                    .multilineTextAlignment(.center)
 
-                Text("Your personal health companion.\nTrack workouts, nutrition, and progress all in one place.")
+                Text("Your personal coach for training,\nnutrition, and progress tracking.")
                     .font(.body)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
-                    .padding(.horizontal, 24)
             }
 
             Spacer()
 
-            // MARK: Feature highlights
-            VStack(alignment: .leading, spacing: 12) {
-                FeatureRow(icon: "dumbbell.fill",
-                           title: "Smart Workouts",
-                           description: "Log sets, reps, and rest with guided exercise library")
-
+            // Feature highlights
+            VStack(alignment: .leading, spacing: 16) {
+                FeatureRow(icon: "chart.bar.fill",
+                           color: .blue,
+                           title: "Track Workouts",
+                           subtitle: "Log sets, reps, and personal records")
                 FeatureRow(icon: "fork.knife",
-                           title: "Nutrition Tracking",
-                           description: "Hit your macro targets with TDEE-based calorie goals")
-
-                FeatureRow(icon: "chart.line.uptrend.xyaxis",
-                           title: "Progress Insights",
-                           description: "Visualise body metrics and streak history over time")
+                           color: .green,
+                           title: "Monitor Nutrition",
+                           subtitle: "Hit your daily macro and calorie goals")
+                FeatureRow(icon: "flame.fill",
+                           color: .orange,
+                           title: "Stay Consistent",
+                           subtitle: "Build streaks and crush your goals")
             }
-            .padding(.horizontal, 32)
+            .padding(.horizontal, 8)
 
             Spacer()
-
-            // MARK: CTA
-            Button(action: viewModel.advance) {
-                Text("Get Started")
-                    .font(.headline)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.accentColor)
-                    .foregroundStyle(.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 14))
-            }
-            .padding(.horizontal, 24)
-            .padding(.bottom, 40)
-            .accessibilityLabel("Get Started")
         }
+        .padding(.horizontal, 24)
     }
 }
 
@@ -75,23 +65,30 @@ struct WelcomeStepView: View {
 
 private struct FeatureRow: View {
     let icon: String
+    let color: Color
     let title: String
-    let description: String
+    let subtitle: String
 
     var body: some View {
-        HStack(alignment: .top, spacing: 14) {
+        HStack(spacing: 16) {
             Image(systemName: icon)
-                .frame(width: 28, height: 28)
-                .foregroundStyle(.tint)
-                .accessibilityHidden(true)
+                .foregroundStyle(color)
+                .frame(width: 32, height: 32)
+                .padding(10)
+                .background(
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(color.opacity(0.12))
+                )
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(.subheadline.bold())
-                Text(description)
+                    .font(.subheadline.weight(.semibold))
+                Text(subtitle)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+
+            Spacer()
         }
     }
 }
@@ -99,5 +96,5 @@ private struct FeatureRow: View {
 // MARK: - Preview
 
 #Preview {
-    WelcomeStepView(viewModel: OnboardingViewModel())
+    WelcomeStepView()
 }

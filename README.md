@@ -29,16 +29,18 @@ FitnessTracker/
 │   ├── FitnessTrackerApp.swift   # @main entry point; creates & injects AppEnvironment
 │   ├── AppEnvironment.swift      # @Observable DI container holding all services & repositories
 │   └── RootView.swift            # Root router (onboarding ↔ dashboard)
-├── Models/                       # SwiftData @Model classes (added in sprint 1, task 2)
+├── Models/                       # SwiftData @Model classes
 ├── Features/
-│   ├── Onboarding/               # Sprint 2 – wizard, TDEE/macro calc
-│   │   ├── OnboardingViewModel.swift   # @Observable 4-step wizard state & persistence
+│   ├── Onboarding/               # 4-step onboarding wizard
+│   │   ├── OnboardingView.swift       # Container with animated step transitions
+│   │   ├── OnboardingViewModel.swift  # @Observable wizard state machine
 │   │   └── Steps/
-│   │       ├── WelcomeStepView.swift        # Branding + CTA
-│   │       ├── BiometricsStepView.swift     # Name, age, gender, height, weight
-│   │       ├── ActivityGoalStepView.swift   # Activity level + fitness goal pickers
-│   │       └── SummaryStepView.swift        # TDEE + macro breakdown + confirm
-│   ├── Dashboard/                # Sprint 2
+│   │       ├── WelcomeStepView.swift
+│   │       ├── BiometricsStepView.swift
+│   │       ├── ActivityGoalStepView.swift
+│   │       └── SummaryStepView.swift
+│   ├── Dashboard/                # Dashboard (placeholder, expanded in later sprints)
+│   │   └── DashboardView.swift
 │   ├── Nutrition/                # Sprint 3
 │   ├── Workout/                  # Sprint 4
 │   └── Progress/                 # Sprint 5
@@ -61,12 +63,12 @@ FitnessTracker/
 └── Resources/                    # exercises.json, assets, PrivacyInfo.xcprivacy
 
 FitnessTrackerTests/
-├── AppEnvironmentTests.swift     # Verifies DI container wires without circular deps
-├── AppSchemaTests.swift          # SwiftData schema migration & model tests
-├── CalculatorTests.swift         # TDEECalculator & MacroCalculator unit tests
-├── ExerciseLibraryServiceTests.swift
-├── KeychainServiceTests.swift
-└── OnboardingViewModelTests.swift # Wizard navigation, validation & TDEE/macro tests
+├── AppEnvironmentTests.swift         # Verifies DI container wires without circular deps
+├── AppSchemaTests.swift              # SwiftData schema and migration tests
+├── CalculatorTests.swift             # TDEECalculator and MacroCalculator unit tests
+├── ExerciseLibraryServiceTests.swift # Exercise seeding and filtering tests
+├── KeychainServiceTests.swift        # Keychain read/write tests
+└── OnboardingViewModelTests.swift    # Onboarding wizard state machine and persistence tests
 ```
 
 ## Dependency Injection
@@ -99,11 +101,19 @@ let env = AppEnvironment(
 
 | Sprint | Focus | Status |
 |--------|-------|--------|
-| 1 | Foundation, SwiftData schema, services | ✅ Done |
+| 1 | Foundation, SwiftData schema, services | ✅ Complete |
 | 2 | Onboarding wizard, HealthKit | 🔄 In progress |
 | 3 | Nutrition & Settings | ⏳ Planned |
 | 4 | Dashboard & Workout Planning | ⏳ Planned |
 | 5 | Session Tracking & Progress Analytics | ⏳ Planned |
+
+## Onboarding Flow
+
+`RootView` queries SwiftData for an existing `UserProfile` on launch and routes to:
+- **Onboarding** — 4-step wizard if no profile exists (first launch)
+- **Dashboard** — main app view if a profile is found
+
+The wizard collects name, biometrics, activity level, and fitness goal, then calls `TDEECalculator` and `MacroCalculator` to compute daily calorie and macro targets before persisting a `UserProfile` via `UserProfileRepository`.
 
 ## Security
 
