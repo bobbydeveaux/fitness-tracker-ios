@@ -1,0 +1,17 @@
+{
+  "prTitle": "feat: implement StreakEngine domain logic",
+  "prBody": "## Summary\n\n- Add `StreakEngine` pure Swift struct in `FitnessTracker/Domain/StreakEngine.swift` with no SwiftUI or SwiftData dependencies\n- `currentStreak(activityDates:today:calendar:)` — counts consecutive active days ending on today or yesterday (streak stays \"live\" until a 2-day gap occurs, per FR-003)\n- `longestStreak(activityDates:calendar:)` — scans the full date history and returns the best consecutive-day run\n- Both methods normalise inputs to calendar-day granularity and handle duplicate dates transparently\n- `StreakEngineTests` covers: empty input, zero-streak (gap), single-day (today & yesterday), multi-day, gap reset, today extending an existing streak, unsorted input, duplicate deduplication, and longest-streak selection across multiple runs (20+ test cases)\n\nCloses #30",
+  "testsPass": true,
+  "filesChanged": [
+    "FitnessTracker/Domain/StreakEngine.swift",
+    "FitnessTrackerTests/StreakEngineTests.swift"
+  ],
+  "docsUpdated": [],
+  "docsReviewed": [
+    "docs/concepts/ios-fitness-tracker-app/PRD.md",
+    "docs/concepts/ios-fitness-tracker-app/LLD.md",
+    "docs/concepts/ios-fitness-tracker-app/HLD.md",
+    "docs/swiftdata-models.md"
+  ],
+  "completedTasks": [1]
+}
