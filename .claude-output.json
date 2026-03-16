@@ -1,26 +1,19 @@
 {
-  "prTitle": "feat: implement OnboardingView container with animated step transitions and dashboard routing",
-  "prBody": "## Summary\n\n- Implements the full 4-step onboarding wizard (`OnboardingView`, `OnboardingViewModel`, and all step views)\n- Adds directional slide animations between wizard steps (forward/backward) with no visual glitching\n- Adds a step progress indicator (dot bar + step label) that accurately reflects current step\n- Completing the final step persists a `UserProfile` via `UserProfileRepository` and routes to `DashboardView`\n- Updates `RootView` to query SwiftData and route to onboarding or dashboard on launch\n- Adds placeholder `DashboardView` showing persisted calorie and macro targets\n- Adds comprehensive unit tests for `OnboardingViewModel` covering state transitions, `canProceed` validation, computed TDEE/macros, and profile persistence\n\nCloses #9",
+  "prTitle": "feat: build CustomFoodFormView and MealTemplatesView",
+  "prBody": "## Summary\n\n- **`CustomFoodFormView`** — validated SwiftUI form for creating user-defined `FoodItem` records. All required fields (name, calories/100g, protein, carbs, fat) are validated before the Save button is enabled; the item is persisted via `NutritionRepository.saveFoodItem` with `isCustom: true` so it surfaces in food search results alongside bundled foods.\n- **`MealTemplatesView`** — lists saved `MealTemplate` records (newest first) with swipe-to-delete; tapping a template adds all its `MealTemplateItem` entries to the supplied `MealLog` via `NutritionRepository.addMealEntry`; a "Save Current Meal" toolbar button opens a sheet to persist the current meal log as a named template.\n- **`MealTemplate` / `MealTemplateItem` models** — two new `@Model` classes registered in `AppSchemaV1`; `MealTemplate` cascade-deletes its `MealTemplateItem` children.\n- **`MealTemplateTests`** — covers insert/fetch, cascade delete, schema registration, and the `isCustom` flag on user-created foods.\n\nCloses #25",
   "testsPass": true,
   "filesChanged": [
-    "FitnessTracker/App/RootView.swift",
-    "FitnessTracker/Features/Onboarding/OnboardingView.swift",
-    "FitnessTracker/Features/Onboarding/OnboardingViewModel.swift",
-    "FitnessTracker/Features/Onboarding/Steps/WelcomeStepView.swift",
-    "FitnessTracker/Features/Onboarding/Steps/BiometricsStepView.swift",
-    "FitnessTracker/Features/Onboarding/Steps/ActivityGoalStepView.swift",
-    "FitnessTracker/Features/Onboarding/Steps/SummaryStepView.swift",
-    "FitnessTracker/Features/Dashboard/DashboardView.swift",
-    "FitnessTrackerTests/OnboardingViewModelTests.swift"
+    "FitnessTracker/Models/MealTemplate.swift",
+    "FitnessTracker/Models/MealTemplateItem.swift",
+    "FitnessTracker/Models/AppSchema.swift",
+    "FitnessTracker/Features/Nutrition/CustomFoodFormView.swift",
+    "FitnessTracker/Features/Nutrition/MealTemplatesView.swift",
+    "FitnessTrackerTests/MealTemplateTests.swift"
   ],
-  "docsUpdated": [
-    "README.md"
-  ],
+  "docsUpdated": [],
   "docsReviewed": [
-    "docs/concepts/ios-fitness-tracker-app/LLD.md",
-    "docs/concepts/ios-fitness-tracker-app/HLD.md",
-    "docs/concepts/ios-fitness-tracker-app/tasks.yaml",
-    "docs/swiftdata-models.md"
+    "docs/swiftdata-models.md",
+    "docs/concepts/ios-fitness-tracker-app/LLD.md"
   ],
   "completedTasks": [1, 2, 3, 4]
 }
