@@ -1,0 +1,30 @@
+GeneratedAt: "2026-03-16T15:35:13Z"
+Issues:
+- IssueNumber: 2
+  IssueURL: https://github.com/bobbydeveaux/fitness-tracker-ios/issues/2
+  TaskID: task-ios-fitness-tracker-app-feat-foundation-1
+- IssueNumber: 3
+  IssueURL: https://github.com/bobbydeveaux/fitness-tracker-ios/issues/3
+  TaskID: task-ios-fitness-tracker-app-feat-foundation-2
+- IssueNumber: 4
+  IssueURL: https://github.com/bobbydeveaux/fitness-tracker-ios/issues/4
+  TaskID: task-ios-fitness-tracker-app-feat-foundation-3
+- IssueNumber: 5
+  IssueURL: https://github.com/bobbydeveaux/fitness-tracker-ios/issues/5
+  TaskID: task-ios-fitness-tracker-app-feat-foundation-4
+- IssueNumber: 6
+  IssueURL: https://github.com/bobbydeveaux/fitness-tracker-ios/issues/6
+  TaskID: task-ios-fitness-tracker-app-feat-onboarding-1
+- IssueNumber: 7
+  IssueURL: https://github.com/bobbydeveaux/fitness-tracker-ios/issues/7
+  TaskID: task-ios-fitness-tracker-app-feat-onboarding-2
+- IssueNumber: 8
+  IssueURL: https://github.com/bobbydeveaux/fitness-tracker-ios/issues/8
+  TaskID: task-ios-fitness-tracker-app-feat-onboarding-3
+- IssueNumber: 9
+  IssueURL: https://github.com/bobbydeveaux/fitness-tracker-ios/issues/9
+  TaskID: task-ios-fitness-tracker-app-feat-onboarding-4
+- IssueNumber: 10
+  IssueURL: https://github.com/bobbydeveaux/fitness-tracker-ios/issues/10
+  TaskID: task-ios-fitness-tracker-app-feat-healthkit-1
+Plan: ios-fitness-tracker-app-plan

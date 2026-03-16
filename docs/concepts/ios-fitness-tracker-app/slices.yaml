@@ -1,0 +1,49 @@
+# Sprint Slices (Horizontal Decomposition)
+
+sprints:
+  - number: 1
+    features:
+      - id: ios-fitness-tracker-app-feat-foundation
+        name: App Foundation, SwiftData Schema & Services
+        type: enabler
+        files: [FitnessTracker/App/FitnessTrackerApp.swift FitnessTracker/App/AppEnvironment.swift FitnessTracker/Models/UserProfile.swift FitnessTracker/Models/FoodItem.swift FitnessTracker/Models/MealLog.swift FitnessTracker/Models/MealEntry.swift FitnessTracker/Models/Exercise.swift FitnessTracker/Models/WorkoutPlan.swift FitnessTracker/Models/WorkoutDay.swift FitnessTracker/Models/PlannedExercise.swift FitnessTracker/Models/WorkoutSession.swift FitnessTracker/Models/LoggedSet.swift FitnessTracker/Models/BodyMetric.swift FitnessTracker/Models/Streak.swift FitnessTracker/Models/AppSchema.swift FitnessTracker/Repositories/Protocols/UserProfileRepository.swift FitnessTracker/Repositories/Protocols/NutritionRepository.swift FitnessTracker/Repositories/Protocols/WorkoutRepository.swift FitnessTracker/Repositories/Protocols/ProgressRepository.swift FitnessTracker/Repositories/SwiftData/SwiftDataUserProfileRepository.swift FitnessTracker/Repositories/SwiftData/SwiftDataNutritionRepository.swift FitnessTracker/Repositories/SwiftData/SwiftDataWorkoutRepository.swift FitnessTracker/Repositories/SwiftData/SwiftDataProgressRepository.swift FitnessTracker/Services/ExerciseLibraryService.swift FitnessTracker/Services/KeychainService.swift FitnessTracker/Resources/exercises.json FitnessTracker/README.md FitnessTracker/.gitignore FitnessTracker/Dockerfile FitnessTracker/docker-compose.yml]
+  - number: 2
+    features:
+      - id: ios-fitness-tracker-app-feat-onboarding
+        name: Onboarding Wizard with TDEE & Macro Calculation
+        type: feature
+        files: [FitnessTracker/Features/Onboarding/OnboardingView.swift FitnessTracker/Features/Onboarding/OnboardingViewModel.swift FitnessTracker/Features/Onboarding/Steps/WelcomeStepView.swift FitnessTracker/Features/Onboarding/Steps/BiometricsStepView.swift FitnessTracker/Features/Onboarding/Steps/ActivityGoalStepView.swift FitnessTracker/Features/Onboarding/Steps/SummaryStepView.swift FitnessTracker/Domain/TDEECalculator.swift FitnessTracker/Domain/MacroCalculator.swift FitnessTracker/README.md FitnessTracker/.gitignore FitnessTracker/Dockerfile FitnessTracker/docker-compose.yml]
+      - id: ios-fitness-tracker-app-feat-healthkit
+        name: HealthKit Integration
+        type: enabler
+        files: [FitnessTracker/Services/HealthKitService.swift FitnessTracker/README.md FitnessTracker/.gitignore FitnessTracker/Dockerfile FitnessTracker/docker-compose.yml]
+  - number: 3
+    features:
+      - id: ios-fitness-tracker-app-feat-nutrition-logging
+        name: Meal Logging with Food Search, Barcode Scanner & Custom Foods
+        type: feature
+        files: [FitnessTracker/Features/Nutrition/NutritionView.swift FitnessTracker/Features/Nutrition/NutritionViewModel.swift FitnessTracker/Features/Nutrition/FoodSearchView.swift FitnessTracker/Features/Nutrition/BarcodeScannerView.swift FitnessTracker/Features/Nutrition/CustomFoodFormView.swift FitnessTracker/Features/Nutrition/MealLogEntryView.swift FitnessTracker/Features/Nutrition/MealTemplatesView.swift FitnessTracker/Features/Nutrition/Components/MacroSummaryBar.swift FitnessTracker/Services/BarcodeLookupService.swift FitnessTracker/README.md FitnessTracker/.gitignore FitnessTracker/Dockerfile FitnessTracker/docker-compose.yml]
+      - id: ios-fitness-tracker-app-feat-settings
+        name: Settings, Push Notifications & Optional CloudKit Sync
+        type: feature
+        files: [FitnessTracker/Features/Settings/SettingsView.swift FitnessTracker/Features/Settings/SettingsViewModel.swift FitnessTracker/Features/Settings/NotificationSettingsView.swift FitnessTracker/Services/NotificationScheduler.swift FitnessTracker/Services/CloudSyncService.swift FitnessTracker/README.md FitnessTracker/.gitignore FitnessTracker/Dockerfile FitnessTracker/docker-compose.yml]
+  - number: 4
+    features:
+      - id: ios-fitness-tracker-app-feat-workout-plan
+        name: AI Workout Plan Generation & Exercise Library
+        type: feature
+        files: [FitnessTracker/Features/Workout/WorkoutPlanView.swift FitnessTracker/Features/Workout/WorkoutPlanViewModel.swift FitnessTracker/Features/Workout/ExerciseLibraryView.swift FitnessTracker/Features/Workout/ExerciseDetailView.swift FitnessTracker/Features/Workout/Components/WorkoutDayCard.swift FitnessTracker/Services/ClaudeAPIClient.swift FitnessTracker/Services/FallbackPlanProvider.swift FitnessTracker/README.md FitnessTracker/.gitignore FitnessTracker/Dockerfile FitnessTracker/docker-compose.yml]
+      - id: ios-fitness-tracker-app-feat-dashboard
+        name: Dashboard with Progress Rings & Streak
+        type: feature
+        files: [FitnessTracker/Features/Dashboard/DashboardView.swift FitnessTracker/Features/Dashboard/DashboardViewModel.swift FitnessTracker/Features/Dashboard/Components/ProgressRingView.swift FitnessTracker/Features/Dashboard/Components/StreakBannerView.swift FitnessTracker/Features/Dashboard/Components/WeeklySummaryCard.swift FitnessTracker/Domain/StreakEngine.swift FitnessTracker/README.md FitnessTracker/.gitignore FitnessTracker/Dockerfile FitnessTracker/docker-compose.yml]
+  - number: 5
+    features:
+      - id: ios-fitness-tracker-app-feat-session-tracking
+        name: Gym Session Logging with Rest Timer & PR Detection
+        type: feature
+        files: [FitnessTracker/Features/Workout/SessionView.swift FitnessTracker/Features/Workout/SessionViewModel.swift FitnessTracker/Features/Workout/Components/ExerciseSetRow.swift FitnessTracker/Features/Workout/Components/RestTimerView.swift FitnessTracker/Features/Workout/Components/SessionSummaryView.swift FitnessTracker/Domain/PRDetector.swift FitnessTracker/README.md FitnessTracker/.gitignore FitnessTracker/Dockerfile FitnessTracker/docker-compose.yml]
+      - id: ios-fitness-tracker-app-feat-progress-analytics
+        name: Progress Charts for Weight, Measurements & Strength
+        type: feature
+        files: [FitnessTracker/Features/Progress/ProgressView.swift FitnessTracker/Features/Progress/ProgressViewModel.swift FitnessTracker/Features/Progress/Components/WeightChartView.swift FitnessTracker/Features/Progress/Components/StrengthChartView.swift FitnessTracker/Features/Progress/Components/MeasurementLogView.swift FitnessTracker/Features/Progress/Components/TimeRangePicker.swift FitnessTracker/README.md FitnessTracker/.gitignore FitnessTracker/Dockerfile FitnessTracker/docker-compose.yml]
