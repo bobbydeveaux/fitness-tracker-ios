@@ -106,8 +106,7 @@ extension AppEnvironment {
     /// repositories to the shared `ModelContainer`.
     ///
     /// The `ModelContainer` schema and CloudKit configuration will be expanded
-    /// in task-ios-fitness-tracker-app-feat-foundation-2 once all `@Model` types
-    /// are defined.
+    /// once all `@Model` types are defined.
     static func makeProductionEnvironment() -> AppEnvironment {
         let container = makeModelContainer()
         let context = container.mainContext
@@ -116,19 +115,18 @@ extension AppEnvironment {
             userProfileRepository: SwiftDataUserProfileRepository(context: context),
             nutritionRepository: SwiftDataNutritionRepository(context: context),
             workoutRepository: SwiftDataWorkoutRepository(context: context),
-            progressRepository: SwiftDataProgressRepository(context: context)
+            progressRepository: SwiftDataProgressRepository(context: context),
+            exerciseLibraryService: ExerciseLibraryService(modelContainer: container)
         )
     }
 
     /// Creates the `ModelContainer` for the app schema.
     ///
     /// The schema list is intentionally empty here and will be populated with
-    /// the versioned `AppSchemaV1` types added in
-    /// task-ios-fitness-tracker-app-feat-foundation-2.
+    /// the versioned `AppSchemaV1` types added in subsequent tasks.
     static func makeModelContainer() -> ModelContainer {
         do {
-            // Schema types registered here once @Model classes are defined in
-            // task-ios-fitness-tracker-app-feat-foundation-2.
+            // Schema types registered here once @Model classes are defined.
             let schema = Schema([])
             let configuration = ModelConfiguration(
                 schema: schema,
