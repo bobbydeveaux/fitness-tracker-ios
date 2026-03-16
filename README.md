@@ -41,14 +41,25 @@ FitnessTracker/
 │   │       └── SummaryStepView.swift
 │   ├── Dashboard/                # Dashboard (placeholder, expanded in later sprints)
 │   │   └── DashboardView.swift
-│   ├── Nutrition/                # Sprint 3
+│   ├── Nutrition/                # Sprint 3: meal logging, food search, barcode scan, custom foods
+│   │   ├── NutritionView.swift        # Today's meal log grouped by meal type
+│   │   ├── NutritionViewModel.swift   # @Observable macro aggregation & persistence
+│   │   ├── MealLogEntryView.swift     # Sheet: search / barcode / templates / custom food tabs
+│   │   ├── CustomFoodFormView.swift   # Validated form for user-defined FoodItems
+│   │   ├── MealTemplatesView.swift    # Quick-add saved meal templates
+│   │   ├── Views/
+│   │   │   ├── BarcodeScannerView.swift  # AVFoundation camera scanner (EAN-13/8, UPC-A, QR)
+│   │   │   └── FoodSearchView.swift      # Debounced search against NutritionRepository
+│   │   └── Components/
+│   │       └── MacroSummaryBar.swift  # Progress rings for calories & macros
 │   ├── Workout/                  # Sprint 4
 │   └── Progress/                 # Sprint 5
 ├── Services/
 │   ├── ExerciseLibraryService.swift  # Decodes & caches bundled exercises.json
 │   ├── KeychainService.swift         # Security framework wrapper
 │   ├── HealthKitService.swift        # HKHealthStore reads/writes
-│   └── CloudSyncService.swift        # CloudKit availability detection & sync-state monitor
+│   ├── CloudSyncService.swift        # CloudKit availability detection & sync-state monitor
+│   └── BarcodeLookupService.swift    # Resolves scanned barcodes to FoodItems via NutritionRepository
 ├── Repositories/
 │   ├── Protocols/                # Repository protocol definitions
 │   │   ├── UserProfileRepository.swift
@@ -66,11 +77,16 @@ FitnessTracker/
 FitnessTrackerTests/
 ├── AppEnvironmentTests.swift         # Verifies DI container wires without circular deps
 ├── AppSchemaTests.swift              # SwiftData schema and migration tests
+├── BarcodeLookupServiceTests.swift   # BarcodeLookupService: match, no-match, error propagation, concurrency
 ├── CalculatorTests.swift             # TDEECalculator and MacroCalculator unit tests
 ├── CloudSyncServiceTests.swift       # CloudSyncService state, toggle, and mock protocol tests
 ├── ExerciseLibraryServiceTests.swift # Exercise seeding and filtering tests
 ├── KeychainServiceTests.swift        # Keychain read/write tests
-└── OnboardingViewModelTests.swift    # Onboarding wizard state machine and persistence tests
+├── MacroCalculatorTests.swift        # MacroCalculator nutrient ratio unit tests
+├── MealTemplateTests.swift           # MealTemplate CRUD and reuse tests
+├── NutritionViewModelTests.swift     # Macro aggregation, addEntry, removeEntry, and error handling
+├── OnboardingViewModelTests.swift    # Onboarding wizard state machine and persistence tests
+└── TDEECalculatorTests.swift         # TDEE formula and activity-multiplier tests
 ```
 
 ## Dependency Injection
@@ -104,8 +120,8 @@ let env = AppEnvironment(
 | Sprint | Focus | Status |
 |--------|-------|--------|
 | 1 | Foundation, SwiftData schema, services | ✅ Complete |
-| 2 | Onboarding wizard, HealthKit | 🔄 In progress |
-| 3 | Nutrition & Settings | ⏳ Planned |
+| 2 | Onboarding wizard, HealthKit | ✅ Complete |
+| 3 | Nutrition & Settings | 🔄 In progress |
 | 4 | Dashboard & Workout Planning | ⏳ Planned |
 | 5 | Session Tracking & Progress Analytics | ⏳ Planned |
 
