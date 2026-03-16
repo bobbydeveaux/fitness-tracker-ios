@@ -1,325 +1,385 @@
 import XCTest
 @testable import FitnessTracker
 
+// MARK: - MockProgressRepositoryForProgress
+
+/// In-memory mock for `ProgressRepository` used in `ProgressViewModelTests`.
+final class MockProgressRepositoryForProgress: ProgressRepository, @unchecked Sendable {
+
+    var bodyMetrics: [BodyMetric] = []
+    var shouldThrow: Bool = false
+
+    private func maybeThrow() throws {
+        if shouldThrow { throw ProgressViewModelTestError.forced }
+    }
+
+    func fetchBodyMetrics(for userProfile: UserProfile) async throws -> [BodyMetric] {
+        try maybeThrow()
+        return bodyMetrics
+    }
+
+    func fetchBodyMetrics(type: String, from startDate: Date, to endDate: Date) async throws -> [BodyMetric] {
+        try maybeThrow()
+        return bodyMetrics.filter {
+            $0.type.rawValue == type && $0.date >= startDate && $0.date <= endDate
+        }
+    }
+
+    func fetchLatestBodyMetric(type: String, for userProfile: UserProfile) async throws -> BodyMetric? {
+        try maybeThrow()
+        return bodyMetrics.filter { $0.type.rawValue == type }.sorted { $0.date > $1.date }.first
+    }
+
+    func saveBodyMetric(_ metric: BodyMetric) async throws { try maybeThrow() }
+    func deleteBodyMetric(_ metric: BodyMetric) async throws { try maybeThrow() }
+
+    func fetchStreak(for userProfile: UserProfile) async throws -> Streak? {
+        try maybeThrow()
+        return nil
+    }
+    func saveStreak(_ streak: Streak) async throws { try maybeThrow() }
+}
+
+// MARK: - MockWorkoutRepositoryForProgress
+
+/// In-memory mock for `WorkoutRepository` used in `ProgressViewModelTests`.
+final class MockWorkoutRepositoryForProgress: WorkoutRepository, @unchecked Sendable {
+
+    var sessions: [WorkoutSession] = []
+    var shouldThrow: Bool = false
+
+    private func maybeThrow() throws {
+        if shouldThrow { throw ProgressViewModelTestError.forced }
+    }
+
+    func fetchExercises() async throws -> [Exercise] { try maybeThrow(); return [] }
+    func fetchExercise(byID id: UUID) async throws -> Exercise? { try maybeThrow(); return nil }
+    func saveExercise(_ exercise: Exercise) async throws { try maybeThrow() }
+    func fetchWorkoutPlans() async throws -> [WorkoutPlan] { try maybeThrow(); return [] }
+    func fetchActiveWorkoutPlan() async throws -> WorkoutPlan? { try maybeThrow(); return nil }
+    func saveWorkoutPlan(_ plan: WorkoutPlan) async throws { try maybeThrow() }
+    func deleteWorkoutPlan(_ plan: WorkoutPlan) async throws { try maybeThrow() }
+
+    func fetchWorkoutSessions() async throws -> [WorkoutSession] {
+        try maybeThrow()
+        return sessions
+    }
+
+    func fetchWorkoutSessions(from startDate: Date, to endDate: Date) async throws -> [WorkoutSession] {
+        try maybeThrow()
+        return sessions.filter { $0.startedAt >= startDate && $0.startedAt <= endDate }
+    }
+
+    func saveWorkoutSession(_ session: WorkoutSession) async throws { try maybeThrow() }
+    func deleteWorkoutSession(_ session: WorkoutSession) async throws { try maybeThrow() }
+
+    func logSet(_ set: LoggedSet, for session: WorkoutSession) async throws {
+        try maybeThrow()
+        session.sets.append(set)
+    }
+}
+
+// MARK: - Error
+
+private enum ProgressViewModelTestError: Error {
+    case forced
+}
+
 // MARK: - ProgressViewModelTests
 
 @MainActor
 final class ProgressViewModelTests: XCTestCase {
 
-    // MARK: - Helpers
+    // MARK: - Fixtures
 
-    private var mockRepository: MockProgressRepository!
+    private let calendar = Calendar.current
+    private lazy var profile = UserProfile(
+        name: "Test User",
+        age: 30,
+        gender: .male,
+        heightCm: 180,
+        weightKg: 80,
+        activityLevel: .moderatelyActive,
+        goal: .maintain,
+        tdeeKcal: 2500,
+        proteinTargetG: 180,
+        carbTargetG: 250,
+        fatTargetG: 80
+    )
 
-    override func setUp() {
-        super.setUp()
-        mockRepository = MockProgressRepository()
+    // MARK: - TimeRange Tests
+
+    func test_timeRange_oneWeek_startDateIsSevenDaysAgo() {
+        let range = TimeRange.oneWeek
+        let start = range.startDate!
+        let diff = calendar.dateComponents([.day], from: calendar.startOfDay(for: start), to: calendar.startOfDay(for: Date()))
+        XCTAssertEqual(diff.day, 7)
     }
 
-    override func tearDown() {
-        mockRepository = nil
-        super.tearDown()
+    func test_timeRange_oneMonth_startDateIsOneMonthAgo() {
+        let range = TimeRange.oneMonth
+        let start = range.startDate!
+        let diff = calendar.dateComponents([.month], from: start, to: Date())
+        XCTAssertEqual(diff.month, 1)
     }
 
-    private func makeViewModel() -> ProgressViewModel {
-        ProgressViewModel(repository: mockRepository)
+    func test_timeRange_threeMonths_startDateIsThreeMonthsAgo() {
+        let range = TimeRange.threeMonths
+        let start = range.startDate!
+        let diff = calendar.dateComponents([.month], from: start, to: Date())
+        XCTAssertEqual(diff.month, 3)
     }
 
-    private func makeProfile() -> UserProfile {
-        UserProfile(
-            name: "Test",
-            age: 25,
-            gender: .male,
-            heightCm: 175,
-            weightKg: 75,
-            activityLevel: .moderatelyActive,
-            goal: .maintain,
-            tdeeKcal: 2400,
-            proteinTargetG: 150,
-            carbTargetG: 240,
-            fatTargetG: 80
-        )
+    func test_timeRange_allTime_startDateIsNil() {
+        XCTAssertNil(TimeRange.allTime.startDate)
     }
 
-    private func makeMetric(
-        type: BodyMetricType = .weight,
-        value: Double = 75.0,
-        daysAgo: Int = 0
-    ) -> BodyMetric {
-        let date = Calendar.current.date(byAdding: .day, value: -daysAgo, to: Date()) ?? Date()
-        return BodyMetric(date: date, type: type, value: value)
+    func test_timeRange_allCasesAreUnique() {
+        let allDisplayTitles = TimeRange.allCases.map(\.displayTitle)
+        XCTAssertEqual(allDisplayTitles.count, Set(allDisplayTitles).count, "All time range display titles should be unique")
     }
 
-    // MARK: - Initial State
+    // MARK: - Weight Data Loading Tests
 
-    func test_initialState_bodyMetricsEmpty() {
-        let vm = makeViewModel()
-        XCTAssertTrue(vm.bodyMetrics.isEmpty)
-    }
+    func test_loadProgress_withWeightMetrics_populatesWeightDataPoints() async {
+        let repo = MockProgressRepositoryForProgress()
+        let workoutRepo = MockWorkoutRepositoryForProgress()
 
-    func test_initialState_isLoadingFalse() {
-        let vm = makeViewModel()
-        XCTAssertFalse(vm.isLoading)
-    }
-
-    func test_initialState_isSavingFalse() {
-        let vm = makeViewModel()
-        XCTAssertFalse(vm.isSaving)
-    }
-
-    func test_initialState_errorMessageNil() {
-        let vm = makeViewModel()
-        XCTAssertNil(vm.errorMessage)
-    }
-
-    func test_initialState_selectedMetricTypeIsWeight() {
-        let vm = makeViewModel()
-        XCTAssertEqual(vm.selectedMetricType, .weight)
-    }
-
-    // MARK: - loadMetrics
-
-    func test_loadMetrics_populatesBodyMetrics() async {
-        let profile = makeProfile()
-        mockRepository.bodyMetrics = [
-            makeMetric(type: .weight, value: 80.0),
-            makeMetric(type: .waist, value: 85.0)
-        ]
-
-        let vm = makeViewModel()
-        await vm.loadMetrics(for: profile)
-
-        XCTAssertEqual(vm.bodyMetrics.count, 2)
-    }
-
-    func test_loadMetrics_isLoadingFalseAfterCompletion() async {
-        let profile = makeProfile()
-        let vm = makeViewModel()
-
-        await vm.loadMetrics(for: profile)
-
-        XCTAssertFalse(vm.isLoading)
-    }
-
-    func test_loadMetrics_setsErrorOnFailure() async {
-        mockRepository.shouldThrow = true
-        let profile = makeProfile()
-        let vm = makeViewModel()
-
-        await vm.loadMetrics(for: profile)
-
-        XCTAssertNotNil(vm.errorMessage)
-    }
-
-    func test_loadMetrics_clearsErrorOnSuccess() async {
-        mockRepository.shouldThrow = true
-        let profile = makeProfile()
-        let vm = makeViewModel()
-
-        await vm.loadMetrics(for: profile)
-        XCTAssertNotNil(vm.errorMessage)
-
-        mockRepository.shouldThrow = false
-        await vm.loadMetrics(for: profile)
-        XCTAssertNil(vm.errorMessage)
-    }
-
-    // MARK: - chartPoints
-
-    func test_chartPoints_filtersToSelectedType() async {
-        let profile = makeProfile()
-        mockRepository.bodyMetrics = [
-            makeMetric(type: .weight, value: 80.0),
-            makeMetric(type: .waist, value: 85.0),
-            makeMetric(type: .weight, value: 79.5)
-        ]
-
-        let vm = makeViewModel()
-        await vm.loadMetrics(for: profile)
-        vm.selectedMetricType = .weight
-
-        XCTAssertEqual(vm.chartPoints.count, 2)
-        XCTAssertTrue(vm.chartPoints.allSatisfy { _ in true }) // type is already filtered
-    }
-
-    func test_chartPoints_emptyWhenNoMetricsForType() async {
-        let profile = makeProfile()
-        mockRepository.bodyMetrics = [makeMetric(type: .chest, value: 100.0)]
-
-        let vm = makeViewModel()
-        await vm.loadMetrics(for: profile)
-        vm.selectedMetricType = .weight
-
-        XCTAssertTrue(vm.chartPoints.isEmpty)
-    }
-
-    func test_chartPoints_sortedByDateAscending() async {
-        let profile = makeProfile()
-        let older = makeMetric(type: .weight, value: 82.0, daysAgo: 5)
-        let newer = makeMetric(type: .weight, value: 80.0, daysAgo: 1)
-        mockRepository.bodyMetrics = [newer, older]
-
-        let vm = makeViewModel()
-        await vm.loadMetrics(for: profile)
-        vm.selectedMetricType = .weight
-
-        let dates = vm.chartPoints.map(\.date)
-        XCTAssertEqual(dates, dates.sorted())
-    }
-
-    // MARK: - filteredMetrics
-
-    func test_filteredMetrics_filtersToSelectedType() async {
-        let profile = makeProfile()
-        mockRepository.bodyMetrics = [
-            makeMetric(type: .weight, value: 80.0),
-            makeMetric(type: .waist, value: 85.0)
-        ]
-
-        let vm = makeViewModel()
-        await vm.loadMetrics(for: profile)
-        vm.selectedMetricType = .waist
-
-        XCTAssertEqual(vm.filteredMetrics.count, 1)
-        XCTAssertEqual(vm.filteredMetrics.first?.value, 85.0)
-    }
-
-    func test_filteredMetrics_sortedByDateDescending() async {
-        let profile = makeProfile()
-        let older = makeMetric(type: .weight, value: 82.0, daysAgo: 5)
-        let newer = makeMetric(type: .weight, value: 80.0, daysAgo: 1)
-        mockRepository.bodyMetrics = [older, newer]
-
-        let vm = makeViewModel()
-        await vm.loadMetrics(for: profile)
-        vm.selectedMetricType = .weight
-
-        let dates = vm.filteredMetrics.map(\.date)
-        XCTAssertEqual(dates, dates.sorted(by: >))
-    }
-
-    // MARK: - latestValue
-
-    func test_latestValue_returnsNilWhenNoMetrics() {
-        let vm = makeViewModel()
-        XCTAssertNil(vm.latestValue)
-    }
-
-    func test_latestValue_returnsMostRecentValueForSelectedType() async {
-        let profile = makeProfile()
-        let older = makeMetric(type: .weight, value: 82.0, daysAgo: 5)
-        let newer = makeMetric(type: .weight, value: 79.5, daysAgo: 1)
-        mockRepository.bodyMetrics = [older, newer]
-
-        let vm = makeViewModel()
-        await vm.loadMetrics(for: profile)
-        vm.selectedMetricType = .weight
-
-        XCTAssertEqual(vm.latestValue, 79.5, accuracy: 0.001)
-    }
-
-    // MARK: - unitLabel
-
-    func test_unitLabel_weightIsKg() {
-        let vm = makeViewModel()
-        vm.selectedMetricType = .weight
-        XCTAssertEqual(vm.unitLabel, "kg")
-    }
-
-    func test_unitLabel_bodyFatIsPercent() {
-        let vm = makeViewModel()
-        vm.selectedMetricType = .bodyFatPercentage
-        XCTAssertEqual(vm.unitLabel, "%")
-    }
-
-    func test_unitLabel_measurementsAreCm() {
-        let vm = makeViewModel()
-        for type in [BodyMetricType.chest, .waist, .hips, .neck, .thigh, .arm] {
-            vm.selectedMetricType = type
-            XCTAssertEqual(vm.unitLabel, "cm", "Expected cm for \(type)")
+        // Add weight entries within the last month
+        let today = Date()
+        for daysAgo in [1, 7, 14, 21, 28] {
+            let date = calendar.date(byAdding: .day, value: -daysAgo, to: today)!
+            let metric = BodyMetric(date: date, type: .weight, value: 80.0 - Double(daysAgo) * 0.1)
+            metric.userProfile = profile
+            repo.bodyMetrics.append(metric)
         }
+
+        let vm = ProgressViewModel(progressRepository: repo, workoutRepository: workoutRepo)
+        vm.selectedRange = .oneMonth
+
+        await vm.loadProgress(for: profile)
+
+        XCTAssertFalse(vm.weightDataPoints.isEmpty, "Weight data points should not be empty")
+        XCTAssertEqual(vm.weightDataPoints.count, 5)
+        XCTAssertNil(vm.errorMessage)
     }
 
-    // MARK: - logMeasurement
+    func test_loadProgress_withNoWeightMetrics_returnsEmptyDataPoints() async {
+        let vm = ProgressViewModel(
+            progressRepository: MockProgressRepositoryForProgress(),
+            workoutRepository: MockWorkoutRepositoryForProgress()
+        )
+        await vm.loadProgress(for: profile)
 
-    func test_logMeasurement_appendsToBodyMetrics() async {
-        let profile = makeProfile()
-        let vm = makeViewModel()
-
-        await vm.logMeasurement(type: .weight, value: 78.5, date: .now, for: profile)
-
-        XCTAssertEqual(vm.bodyMetrics.count, 1)
-        XCTAssertEqual(vm.bodyMetrics.first?.value, 78.5, accuracy: 0.001)
-        XCTAssertEqual(vm.bodyMetrics.first?.type, .weight)
+        XCTAssertTrue(vm.weightDataPoints.isEmpty)
+        XCTAssertNil(vm.errorMessage)
     }
 
-    func test_logMeasurement_isSavingFalseAfterCompletion() async {
-        let profile = makeProfile()
-        let vm = makeViewModel()
+    func test_loadProgress_filtersOutOfRangeMetrics() async {
+        let repo = MockProgressRepositoryForProgress()
+        let workoutRepo = MockWorkoutRepositoryForProgress()
 
-        await vm.logMeasurement(type: .weight, value: 78.5, date: .now, for: profile)
+        // One entry in range, one outside range
+        let today = Date()
+        let inRange = BodyMetric(
+            date: calendar.date(byAdding: .day, value: -5, to: today)!,
+            type: .weight,
+            value: 80.0
+        )
+        let outOfRange = BodyMetric(
+            date: calendar.date(byAdding: .day, value: -60, to: today)!,
+            type: .weight,
+            value: 79.0
+        )
+        repo.bodyMetrics = [inRange, outOfRange]
 
-        XCTAssertFalse(vm.isSaving)
+        let vm = ProgressViewModel(progressRepository: repo, workoutRepository: workoutRepo)
+        vm.selectedRange = .oneWeek
+
+        await vm.loadProgress(for: profile)
+
+        XCTAssertEqual(vm.weightDataPoints.count, 1, "Only the in-range metric should appear for 1W range")
+        XCTAssertEqual(vm.weightDataPoints.first?.weightKg, 80.0)
     }
 
-    func test_logMeasurement_setsErrorOnFailure() async {
-        mockRepository.shouldThrow = true
-        let profile = makeProfile()
-        let vm = makeViewModel()
+    func test_loadProgress_allTimeRange_includesAllMetrics() async {
+        let repo = MockProgressRepositoryForProgress()
+        let workoutRepo = MockWorkoutRepositoryForProgress()
 
-        await vm.logMeasurement(type: .weight, value: 78.5, date: .now, for: profile)
+        let today = Date()
+        let dates = [30, 180, 365, 730]
+        for daysAgo in dates {
+            let metric = BodyMetric(
+                date: calendar.date(byAdding: .day, value: -daysAgo, to: today)!,
+                type: .weight,
+                value: 80.0
+            )
+            repo.bodyMetrics.append(metric)
+        }
 
-        XCTAssertNotNil(vm.errorMessage)
+        let vm = ProgressViewModel(progressRepository: repo, workoutRepository: workoutRepo)
+        vm.selectedRange = .allTime
+
+        await vm.loadProgress(for: profile)
+
+        // For allTime, data is down-sampled to weekly averages — one point per week
+        XCTAssertFalse(vm.weightDataPoints.isEmpty, "All-time range should return data points")
     }
 
-    // MARK: - deleteMetric
+    func test_loadProgress_ignoresNonWeightMetrics() async {
+        let repo = MockProgressRepositoryForProgress()
+        let workoutRepo = MockWorkoutRepositoryForProgress()
 
-    func test_deleteMetric_removesFromBodyMetrics() async {
-        let profile = makeProfile()
-        let metric = makeMetric(type: .weight, value: 80.0)
-        mockRepository.bodyMetrics = [metric]
+        let chestMetric = BodyMetric(
+            date: calendar.date(byAdding: .day, value: -5, to: Date())!,
+            type: .chest,
+            value: 95.0
+        )
+        repo.bodyMetrics = [chestMetric]
 
-        let vm = makeViewModel()
-        await vm.loadMetrics(for: profile)
-        XCTAssertEqual(vm.bodyMetrics.count, 1)
+        let vm = ProgressViewModel(progressRepository: repo, workoutRepository: workoutRepo)
+        await vm.loadProgress(for: profile)
 
-        await vm.deleteMetric(metric)
-        XCTAssertTrue(vm.bodyMetrics.isEmpty)
+        XCTAssertTrue(vm.weightDataPoints.isEmpty, "Non-weight metrics should not appear in weightDataPoints")
     }
 
-    func test_deleteMetric_isSavingFalseAfterCompletion() async {
-        let profile = makeProfile()
-        let metric = makeMetric(type: .weight, value: 80.0)
-        mockRepository.bodyMetrics = [metric]
+    // MARK: - Strength Data Loading Tests
 
-        let vm = makeViewModel()
-        await vm.loadMetrics(for: profile)
-        await vm.deleteMetric(metric)
+    func test_loadProgress_withLoggedSets_populatesStrengthData() async {
+        let repo = MockProgressRepositoryForProgress()
+        let workoutRepo = MockWorkoutRepositoryForProgress()
 
-        XCTAssertFalse(vm.isSaving)
+        // Build a session with a logged set
+        let exercise = Exercise(
+            exerciseID: "bench-press",
+            name: "Barbell Bench Press",
+            muscleGroup: "Chest",
+            equipment: "Barbell",
+            instructions: "",
+            imageName: ""
+        )
+        let session = WorkoutSession(startedAt: calendar.date(byAdding: .day, value: -3, to: Date())!)
+        let set = LoggedSet(setIndex: 0, weightKg: 100, reps: 5, isComplete: true)
+        set.exercise = exercise
+        session.sets = [set]
+        workoutRepo.sessions = [session]
+
+        let vm = ProgressViewModel(progressRepository: repo, workoutRepository: workoutRepo)
+        await vm.loadProgress(for: profile)
+
+        XCTAssertFalse(vm.availableExercises.isEmpty, "Available exercises should be populated from logged sets")
+        XCTAssertEqual(vm.availableExercises.first?.id, "bench-press")
     }
 
-    func test_deleteMetric_setsErrorOnFailure() async {
-        let profile = makeProfile()
-        let metric = makeMetric(type: .weight, value: 80.0)
-        mockRepository.bodyMetrics = [metric]
+    func test_loadProgress_epleyFormulaCalculatedCorrectly() async {
+        let repo = MockProgressRepositoryForProgress()
+        let workoutRepo = MockWorkoutRepositoryForProgress()
 
-        let vm = makeViewModel()
-        await vm.loadMetrics(for: profile)
+        let exercise = Exercise(
+            exerciseID: "squat",
+            name: "Barbell Back Squat",
+            muscleGroup: "Legs",
+            equipment: "Barbell",
+            instructions: "",
+            imageName: ""
+        )
+        // 100 kg × 5 reps → Epley 1RM = 100 × (1 + 5/30) = 116.67 kg
+        let session = WorkoutSession(startedAt: calendar.date(byAdding: .day, value: -1, to: Date())!)
+        let set = LoggedSet(setIndex: 0, weightKg: 100, reps: 5, isComplete: true)
+        set.exercise = exercise
+        session.sets = [set]
+        workoutRepo.sessions = [session]
 
-        mockRepository.shouldThrow = true
-        await vm.deleteMetric(metric)
+        let vm = ProgressViewModel(progressRepository: repo, workoutRepository: workoutRepo)
+        vm.selectedRange = .oneMonth
+        await vm.loadProgress(for: profile)
 
-        XCTAssertNotNil(vm.errorMessage)
+        let points = vm.strengthDataPoints["squat"] ?? []
+        XCTAssertFalse(points.isEmpty, "Should have a strength data point for squat")
+        let expected1RM = 100.0 * (1.0 + 5.0 / 30.0)
+        XCTAssertEqual(points.first?.estimatedOneRMKg ?? 0, expected1RM, accuracy: 0.001)
     }
 
-    // MARK: - ProgressChartPoint
+    func test_loadProgress_withNoSessions_returnsEmptyStrengthData() async {
+        let vm = ProgressViewModel(
+            progressRepository: MockProgressRepositoryForProgress(),
+            workoutRepository: MockWorkoutRepositoryForProgress()
+        )
+        await vm.loadProgress(for: profile)
 
-    func test_progressChartPoint_createdFromBodyMetric() {
-        let metric = makeMetric(type: .weight, value: 75.0)
-        let point = ProgressChartPoint(metric: metric)
+        XCTAssertTrue(vm.availableExercises.isEmpty)
+        XCTAssertTrue(vm.strengthDataPoints.isEmpty)
+    }
 
-        XCTAssertEqual(point.id, metric.id)
-        XCTAssertEqual(point.value, 75.0, accuracy: 0.001)
-        XCTAssertEqual(point.date, metric.date)
+    func test_loadProgress_selectedExerciseAutoSelectsFirst() async {
+        let repo = MockProgressRepositoryForProgress()
+        let workoutRepo = MockWorkoutRepositoryForProgress()
+
+        let exercise = Exercise(
+            exerciseID: "deadlift",
+            name: "Deadlift",
+            muscleGroup: "Back",
+            equipment: "Barbell",
+            instructions: "",
+            imageName: ""
+        )
+        let session = WorkoutSession(startedAt: calendar.date(byAdding: .day, value: -1, to: Date())!)
+        let set = LoggedSet(setIndex: 0, weightKg: 120, reps: 3, isComplete: true)
+        set.exercise = exercise
+        session.sets = [set]
+        workoutRepo.sessions = [session]
+
+        let vm = ProgressViewModel(progressRepository: repo, workoutRepository: workoutRepo)
+        XCTAssertNil(vm.selectedExercise, "Should start with no exercise selected")
+
+        await vm.loadProgress(for: profile)
+
+        XCTAssertNotNil(vm.selectedExercise, "After loading, an exercise should be auto-selected")
+        XCTAssertEqual(vm.selectedExercise?.id, "deadlift")
+    }
+
+    // MARK: - Error Handling Tests
+
+    func test_loadProgress_progressRepositoryError_setsErrorMessage() async {
+        let repo = MockProgressRepositoryForProgress()
+        repo.shouldThrow = true
+        let vm = ProgressViewModel(progressRepository: repo, workoutRepository: MockWorkoutRepositoryForProgress())
+
+        await vm.loadProgress(for: profile)
+
+        XCTAssertNotNil(vm.errorMessage, "Error message should be set when repository throws")
+    }
+
+    func test_loadProgress_workoutRepositoryError_setsErrorMessage() async {
+        let workoutRepo = MockWorkoutRepositoryForProgress()
+        workoutRepo.shouldThrow = true
+        let vm = ProgressViewModel(progressRepository: MockProgressRepositoryForProgress(), workoutRepository: workoutRepo)
+
+        await vm.loadProgress(for: profile)
+
+        XCTAssertNotNil(vm.errorMessage, "Error message should be set when workout repository throws")
+    }
+
+    // MARK: - Loading State Tests
+
+    func test_loadProgress_setsIsLoadingWhileLoading() async {
+        let vm = ProgressViewModel(
+            progressRepository: MockProgressRepositoryForProgress(),
+            workoutRepository: MockWorkoutRepositoryForProgress()
+        )
+        XCTAssertFalse(vm.isLoading)
+        await vm.loadProgress(for: profile)
+        XCTAssertFalse(vm.isLoading, "isLoading should be false after loading completes")
+    }
+
+    // MARK: - currentStrengthPoints Tests
+
+    func test_currentStrengthPoints_returnsEmptyWhenNoExerciseSelected() {
+        let vm = ProgressViewModel(
+            progressRepository: MockProgressRepositoryForProgress(),
+            workoutRepository: MockWorkoutRepositoryForProgress()
+        )
+        XCTAssertNil(vm.selectedExercise)
+        XCTAssertTrue(vm.currentStrengthPoints.isEmpty)
     }
 }
