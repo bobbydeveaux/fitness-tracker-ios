@@ -4,289 +4,341 @@ import SwiftData
 
 // MARK: - MockUserProfileRepository
 
-/// In-memory stub of `UserProfileRepository` for use in unit tests.
-/// Captures the last saved profile for assertion.
+/// In-memory stub for `UserProfileRepository` that avoids SwiftData disk I/O.
 final class MockUserProfileRepository: UserProfileRepository, @unchecked Sendable {
-
-    var storedProfile: UserProfile?
-    var shouldThrow: Bool = false
+    private(set) var savedProfile: UserProfile? = nil
+    private(set) var saveCallCount: Int = 0
+    var shouldThrowOnSave: Bool = false
 
     func fetch() async throws -> UserProfile? {
-        if shouldThrow { throw TestError.forcedFailure }
-        return storedProfile
+        return savedProfile
     }
 
     func save(_ profile: UserProfile) async throws {
-        if shouldThrow { throw TestError.forcedFailure }
-        storedProfile = profile
+        if shouldThrowOnSave {
+            throw MockError.saveFailed
+        }
+        savedProfile = profile
+        saveCallCount += 1
     }
 
     func delete(_ profile: UserProfile) async throws {
-        if shouldThrow { throw TestError.forcedFailure }
-        storedProfile = nil
+        savedProfile = nil
     }
 
-    enum TestError: Error {
-        case forcedFailure
+    enum MockError: Error, LocalizedError {
+        case saveFailed
+        var errorDescription: String? { "Mock save failed" }
     }
 }
 
 // MARK: - OnboardingViewModelTests
 
-/// Unit tests for `OnboardingViewModel`.
+@MainActor
 final class OnboardingViewModelTests: XCTestCase {
 
     // MARK: - Helpers
 
-    private func makeViewModel(repository: MockUserProfileRepository = MockUserProfileRepository()) -> OnboardingViewModel {
-        OnboardingViewModel(userProfileRepository: repository)
+    private func makeContainer() throws -> ModelContainer {
+        return try AppSchema.makeContainer(inMemory: true)
     }
 
-    // MARK: - Initial state
-
-    func testInitialStepIsPersonalInfo() {
-        let vm = makeViewModel()
-        XCTAssertEqual(vm.currentStep, .personalInfo)
+    private func makeViewModel(
+        repository: MockUserProfileRepository = MockUserProfileRepository()
+    ) throws -> OnboardingViewModel {
+        let container = try makeContainer()
+        return OnboardingViewModel(
+            repository: repository,
+            context: container.mainContext
+        )
     }
 
-    func testInitialStateIsNotComplete() {
-        let vm = makeViewModel()
+    // MARK: - Initial State
+
+    func testInitialStep_isWelcome() throws {
+        let vm = try makeViewModel()
+        XCTAssertEqual(vm.currentStep, .welcome)
+    }
+
+    func testTotalSteps_isFour() throws {
+        let vm = try makeViewModel()
+        XCTAssertEqual(vm.totalSteps, 4)
+    }
+
+    func testIsComplete_initiallyFalse() throws {
+        let vm = try makeViewModel()
         XCTAssertFalse(vm.isComplete)
-        XCTAssertFalse(vm.isLoading)
-        XCTAssertNil(vm.error)
     }
 
-    // MARK: - Validation / canAdvance
+    func testIsSaving_initiallyFalse() throws {
+        let vm = try makeViewModel()
+        XCTAssertFalse(vm.isSaving)
+    }
 
-    func testCannotAdvancePersonalInfoWithEmptyName() {
-        let vm = makeViewModel()
+    // MARK: - Step Navigation
+
+    func testNextStep_advancesFromWelcomeToBiometrics() throws {
+        let vm = try makeViewModel()
+        vm.nextStep()
+        XCTAssertEqual(vm.currentStep, .biometrics)
+    }
+
+    func testNextStep_advancesThroughAllSteps() throws {
+        let vm = try makeViewModel()
+        vm.nextStep()
+        XCTAssertEqual(vm.currentStep, .biometrics)
+        vm.nextStep()
+        XCTAssertEqual(vm.currentStep, .activityGoal)
+        vm.nextStep()
+        XCTAssertEqual(vm.currentStep, .summary)
+    }
+
+    func testNextStep_clampedAtLastStep() throws {
+        let vm = try makeViewModel()
+        // Advance to last step
+        vm.nextStep(); vm.nextStep(); vm.nextStep()
+        XCTAssertEqual(vm.currentStep, .summary)
+        // Call nextStep beyond last — should remain at summary
+        vm.nextStep()
+        XCTAssertEqual(vm.currentStep, .summary)
+    }
+
+    func testPreviousStep_clampedAtWelcome() throws {
+        let vm = try makeViewModel()
+        // Already at first step — should stay there
+        vm.previousStep()
+        XCTAssertEqual(vm.currentStep, .welcome)
+    }
+
+    func testPreviousStep_goesBack() throws {
+        let vm = try makeViewModel()
+        vm.nextStep()  // → biometrics
+        vm.nextStep()  // → activityGoal
+        vm.previousStep()
+        XCTAssertEqual(vm.currentStep, .biometrics)
+    }
+
+    func testNextThenPreviousReturnsToStart() throws {
+        let vm = try makeViewModel()
+        vm.nextStep()
+        vm.previousStep()
+        XCTAssertEqual(vm.currentStep, .welcome)
+    }
+
+    // MARK: - canProceed
+
+    func testCanProceed_welcome_isAlwaysTrue() throws {
+        let vm = try makeViewModel()
+        XCTAssertEqual(vm.currentStep, .welcome)
+        XCTAssertTrue(vm.canProceed)
+    }
+
+    func testCanProceed_biometrics_falseWhenNameEmpty() throws {
+        let vm = try makeViewModel()
+        vm.nextStep()  // → biometrics
         vm.name = ""
-        XCTAssertFalse(vm.canAdvance)
+        XCTAssertFalse(vm.canProceed)
     }
 
-    func testCannotAdvancePersonalInfoWithWhitespaceOnlyName() {
-        let vm = makeViewModel()
+    func testCanProceed_biometrics_falseWhenNameIsWhitespace() throws {
+        let vm = try makeViewModel()
+        vm.nextStep()
         vm.name = "   "
-        XCTAssertFalse(vm.canAdvance)
+        XCTAssertFalse(vm.canProceed)
     }
 
-    func testCannotAdvancePersonalInfoWithZeroAge() {
-        let vm = makeViewModel()
-        vm.name = "Alice"
-        vm.age = 0
-        XCTAssertFalse(vm.canAdvance)
-    }
-
-    func testCanAdvancePersonalInfoWithValidData() {
-        let vm = makeViewModel()
-        vm.name = "Alice"
-        vm.age = 28
-        XCTAssertTrue(vm.canAdvance)
-    }
-
-    func testCannotAdvanceBodyMetricsWithZeroHeight() {
-        let vm = makeViewModel()
-        vm.name = "Alice"
-        vm.age = 28
-        vm.nextStep()  // advance to bodyMetrics
-        vm.heightCm = 0
-        vm.weightKg = 65
-        XCTAssertFalse(vm.canAdvance)
-    }
-
-    func testCannotAdvanceBodyMetricsWithZeroWeight() {
-        let vm = makeViewModel()
-        vm.name = "Alice"
-        vm.age = 28
-        vm.nextStep()  // advance to bodyMetrics
-        vm.heightCm = 165
-        vm.weightKg = 0
-        XCTAssertFalse(vm.canAdvance)
-    }
-
-    func testCanAlwaysAdvanceActivityLevel() {
-        let vm = makeViewModel()
-        vm.name = "Bob"
-        vm.age = 30
-        vm.nextStep()  // bodyMetrics
-        vm.nextStep()  // activityLevel
-        XCTAssertEqual(vm.currentStep, .activityLevel)
-        XCTAssertTrue(vm.canAdvance)
-    }
-
-    func testCanAlwaysAdvanceGoalStep() {
-        let vm = makeViewModel()
-        vm.name = "Bob"
-        vm.age = 30
-        vm.nextStep()  // bodyMetrics
-        vm.nextStep()  // activityLevel
-        vm.nextStep()  // goal
-        XCTAssertEqual(vm.currentStep, .goal)
-        XCTAssertTrue(vm.canAdvance)
-    }
-
-    // MARK: - Navigation
-
-    func testNextStepAdvancesStep() {
-        let vm = makeViewModel()
-        vm.name = "Alice"
+    func testCanProceed_biometrics_trueWhenAllFieldsValid() throws {
+        let vm = try makeViewModel()
+        vm.nextStep()  // → biometrics
+        vm.name = "Alex"
         vm.age = 25
-        vm.nextStep()
-        XCTAssertEqual(vm.currentStep, .bodyMetrics)
-    }
-
-    func testNextStepDoesNothingWhenValidationFails() {
-        let vm = makeViewModel()
-        vm.name = ""
-        vm.nextStep()
-        XCTAssertEqual(vm.currentStep, .personalInfo, "Should stay on personalInfo when name is empty")
-    }
-
-    func testPreviousStepGoesBack() {
-        let vm = makeViewModel()
-        vm.name = "Alice"
-        vm.age = 25
-        vm.nextStep()
-        XCTAssertEqual(vm.currentStep, .bodyMetrics)
-        vm.previousStep()
-        XCTAssertEqual(vm.currentStep, .personalInfo)
-    }
-
-    func testPreviousStepOnFirstStepDoesNothing() {
-        let vm = makeViewModel()
-        vm.previousStep()
-        XCTAssertEqual(vm.currentStep, .personalInfo)
-    }
-
-    func testCannotNavigatePastLastStep() {
-        let vm = makeViewModel()
-        vm.name = "Alice"
-        vm.age = 25
-        for _ in 0..<10 { vm.nextStep() }
-        XCTAssertEqual(vm.currentStep, .goal, "Should not advance past the last step")
-    }
-
-    // MARK: - finishOnboarding – success
-
-    func testFinishOnboardingPersistsProfile() async throws {
-        let repo = MockUserProfileRepository()
-        let vm = makeViewModel(repository: repo)
-
-        vm.name = "Alice"
-        vm.age = 28
-        vm.gender = .female
-        vm.heightCm = 165
-        vm.weightKg = 60
-        vm.activityLevel = .moderatelyActive
-        vm.goal = .maintain
-
-        // Navigate to last step so all fields are set
-        vm.nextStep(); vm.nextStep(); vm.nextStep()
-        XCTAssertEqual(vm.currentStep, .goal)
-
-        await vm.finishOnboarding()
-
-        XCTAssertTrue(vm.isComplete, "isComplete should be true after successful save")
-        XCTAssertFalse(vm.isLoading, "isLoading should be false after completion")
-        XCTAssertNil(vm.error, "No error should be set on success")
-        XCTAssertNotNil(repo.storedProfile, "Repository should have a saved profile")
-    }
-
-    func testFinishOnboardingProfileHasCorrectName() async {
-        let repo = MockUserProfileRepository()
-        let vm = makeViewModel(repository: repo)
-        vm.name = "  Alice  "  // leading/trailing whitespace
-        vm.age = 28
-        vm.nextStep(); vm.nextStep(); vm.nextStep()
-
-        await vm.finishOnboarding()
-
-        XCTAssertEqual(repo.storedProfile?.name, "Alice", "Name should be trimmed")
-    }
-
-    func testFinishOnboardingComputesTDEE() async {
-        let repo = MockUserProfileRepository()
-        let vm = makeViewModel(repository: repo)
-
-        vm.name = "Bob"
-        vm.age = 30
-        vm.gender = .male
         vm.heightCm = 175
-        vm.weightKg = 80
-        vm.activityLevel = .sedentary  // ×1.2
-        vm.goal = .maintain
-        vm.nextStep(); vm.nextStep(); vm.nextStep()
-
-        await vm.finishOnboarding()
-
-        // Expected TDEE: BMR = 10×80 + 6.25×175 − 5×30 + 5 = 1748.75; TDEE = 1748.75×1.2 ≈ 2099
-        XCTAssertEqual(repo.storedProfile?.tdeeKcal ?? 0, 2099, accuracy: 0.5)
+        vm.weightKg = 75
+        XCTAssertTrue(vm.canProceed)
     }
 
-    func testFinishOnboardingComputesMacros() async {
-        let repo = MockUserProfileRepository()
-        let vm = makeViewModel(repository: repo)
+    func testCanProceed_biometrics_falseWhenAgeTooLow() throws {
+        let vm = try makeViewModel()
+        vm.nextStep()
+        vm.name = "Alex"
+        vm.age = 5  // below minimum of 10
+        XCTAssertFalse(vm.canProceed)
+    }
 
-        vm.name = "Carol"
-        vm.age = 25
-        vm.gender = .female
-        vm.heightCm = 165
-        vm.weightKg = 60
+    func testCanProceed_biometrics_falseWhenHeightTooLow() throws {
+        let vm = try makeViewModel()
+        vm.nextStep()
+        vm.name = "Alex"
+        vm.heightCm = 10  // below minimum of 50
+        XCTAssertFalse(vm.canProceed)
+    }
+
+    func testCanProceed_biometrics_falseWhenWeightTooLow() throws {
+        let vm = try makeViewModel()
+        vm.nextStep()
+        vm.name = "Alex"
+        vm.weightKg = 5  // below minimum of 20
+        XCTAssertFalse(vm.canProceed)
+    }
+
+    func testCanProceed_activityGoal_isAlwaysTrue() throws {
+        let vm = try makeViewModel()
+        vm.nextStep(); vm.nextStep()  // → activityGoal
+        XCTAssertTrue(vm.canProceed)
+    }
+
+    func testCanProceed_summary_isAlwaysTrue() throws {
+        let vm = try makeViewModel()
+        vm.nextStep(); vm.nextStep(); vm.nextStep()  // → summary
+        XCTAssertTrue(vm.canProceed)
+    }
+
+    // MARK: - Computed Targets
+
+    func testComputedTDEE_isPositive() throws {
+        let vm = try makeViewModel()
+        vm.gender = .male
+        vm.weightKg = 80
+        vm.heightCm = 180
+        vm.age = 30
         vm.activityLevel = .sedentary
         vm.goal = .maintain
-        vm.nextStep(); vm.nextStep(); vm.nextStep()
-
-        await vm.finishOnboarding()
-
-        // Just verify macros are positive (exact values tested in MacroCalculatorTests)
-        XCTAssertGreaterThan(repo.storedProfile?.proteinTargetG ?? 0, 0)
-        XCTAssertGreaterThan(repo.storedProfile?.carbTargetG ?? 0,    0)
-        XCTAssertGreaterThan(repo.storedProfile?.fatTargetG ?? 0,     0)
+        // Male 80kg 180cm 30y sedentary maintain → 2136 kcal
+        XCTAssertGreaterThan(vm.computedTDEE, 0)
+        XCTAssertEqual(vm.computedTDEE, 2136, accuracy: 5)
     }
 
-    // MARK: - finishOnboarding – failure
-
-    func testFinishOnboardingPropagatesRepositoryError() async {
-        let repo = MockUserProfileRepository()
-        repo.shouldThrow = true
-        let vm = makeViewModel(repository: repo)
-
-        vm.name = "Dave"
-        vm.age = 40
-        vm.nextStep(); vm.nextStep(); vm.nextStep()
-
-        await vm.finishOnboarding()
-
-        XCTAssertFalse(vm.isComplete, "isComplete should remain false when repository throws")
-        XCTAssertNotNil(vm.error, "error should be set when repository throws")
-        XCTAssertFalse(vm.isLoading, "isLoading should be reset to false after error")
+    func testComputedMacros_proteinPositive() throws {
+        let vm = try makeViewModel()
+        vm.weightKg = 75; vm.heightCm = 175; vm.age = 28
+        XCTAssertGreaterThan(vm.computedMacros.proteinG, 0)
     }
 
-    // MARK: - OnboardingStep helpers
+    func testComputedMacros_reflectGoal() throws {
+        let vm = try makeViewModel()
+        vm.weightKg = 75; vm.heightCm = 175; vm.age = 28; vm.gender = .male
+        vm.activityLevel = .moderatelyActive
 
-    func testOnboardingStepIsFirst() {
-        XCTAssertTrue(OnboardingStep.personalInfo.isFirst)
-        XCTAssertFalse(OnboardingStep.bodyMetrics.isFirst)
+        vm.goal = .cut
+        let cutProtein = vm.computedMacros.proteinG
+
+        vm.goal = .bulk
+        let bulkProtein = vm.computedMacros.proteinG
+
+        // Cut has higher protein ratio (40%) vs bulk (25%)
+        XCTAssertGreaterThan(cutProtein, bulkProtein)
     }
 
-    func testOnboardingStepIsLast() {
-        XCTAssertTrue(OnboardingStep.goal.isLast)
-        XCTAssertFalse(OnboardingStep.activityLevel.isLast)
+    // MARK: - Completion
+
+    func testCompleteOnboarding_savesProfileToRepository() async throws {
+        let repository = MockUserProfileRepository()
+        let vm = try makeViewModel(repository: repository)
+
+        vm.name = "Alex"
+        vm.age = 30
+        vm.gender = .male
+        vm.heightCm = 180
+        vm.weightKg = 80
+        vm.activityLevel = .sedentary
+        vm.goal = .maintain
+
+        await vm.completeOnboarding()
+
+        XCTAssertEqual(repository.saveCallCount, 1)
+        let saved = try XCTUnwrap(repository.savedProfile)
+        XCTAssertEqual(saved.name, "Alex")
+        XCTAssertEqual(saved.age, 30)
+        XCTAssertEqual(saved.gender, .male)
+        XCTAssertEqual(saved.heightCm, 180, accuracy: 0.1)
+        XCTAssertEqual(saved.weightKg, 80, accuracy: 0.1)
+        XCTAssertEqual(saved.activityLevel, .sedentary)
+        XCTAssertEqual(saved.goal, .maintain)
     }
 
-    func testOnboardingStepNextAndPrevious() {
-        XCTAssertEqual(OnboardingStep.personalInfo.next,   .bodyMetrics)
-        XCTAssertEqual(OnboardingStep.bodyMetrics.next,    .activityLevel)
-        XCTAssertEqual(OnboardingStep.activityLevel.next,  .goal)
-        XCTAssertNil(OnboardingStep.goal.next)
+    func testCompleteOnboarding_setsIsCompleteTrue() async throws {
+        let repository = MockUserProfileRepository()
+        let vm = try makeViewModel(repository: repository)
+        vm.name = "Alex"
 
-        XCTAssertNil(OnboardingStep.personalInfo.previous)
-        XCTAssertEqual(OnboardingStep.bodyMetrics.previous,   .personalInfo)
-        XCTAssertEqual(OnboardingStep.activityLevel.previous, .bodyMetrics)
-        XCTAssertEqual(OnboardingStep.goal.previous,          .activityLevel)
+        await vm.completeOnboarding()
+
+        XCTAssertTrue(vm.isComplete)
     }
 
-    func testOnboardingStepCaseCount() {
-        XCTAssertEqual(OnboardingStep.allCases.count, 4)
+    func testCompleteOnboarding_correctTDEEAndMacrosInProfile() async throws {
+        let repository = MockUserProfileRepository()
+        let vm = try makeViewModel(repository: repository)
+
+        // Male 80kg 180cm 30y sedentary maintain → TDEE = 2136 kcal
+        vm.name = "Alex"
+        vm.age = 30
+        vm.gender = .male
+        vm.heightCm = 180
+        vm.weightKg = 80
+        vm.activityLevel = .sedentary
+        vm.goal = .maintain
+
+        let expectedTDEE = TDEECalculator.tdee(
+            gender: .male, weightKg: 80, heightCm: 180, age: 30,
+            activityLevel: .sedentary, goal: .maintain
+        )
+        let expectedMacros = MacroCalculator.macros(calories: expectedTDEE, goal: .maintain)
+
+        await vm.completeOnboarding()
+
+        let saved = try XCTUnwrap(repository.savedProfile)
+        XCTAssertEqual(saved.tdeeKcal, expectedTDEE, accuracy: 1)
+        XCTAssertEqual(saved.proteinTargetG, expectedMacros.proteinG, accuracy: 1)
+        XCTAssertEqual(saved.carbTargetG, expectedMacros.carbsG, accuracy: 1)
+        XCTAssertEqual(saved.fatTargetG, expectedMacros.fatG, accuracy: 1)
+    }
+
+    func testCompleteOnboarding_onRepositoryError_setsErrorMessage() async throws {
+        let repository = MockUserProfileRepository()
+        repository.shouldThrowOnSave = true
+        let vm = try makeViewModel(repository: repository)
+        vm.name = "Alex"
+
+        await vm.completeOnboarding()
+
+        XCTAssertFalse(vm.isComplete)
+        XCTAssertNotNil(vm.errorMessage)
+    }
+
+    func testCompleteOnboarding_onRepositoryError_doesNotCallComplete() async throws {
+        let repository = MockUserProfileRepository()
+        repository.shouldThrowOnSave = true
+        let vm = try makeViewModel(repository: repository)
+        vm.name = "Alex"
+
+        await vm.completeOnboarding()
+
+        XCTAssertFalse(vm.isComplete)
+    }
+
+    func testCompleteOnboarding_trimsWhitespaceFromName() async throws {
+        let repository = MockUserProfileRepository()
+        let vm = try makeViewModel(repository: repository)
+        vm.name = "  Alex  "
+
+        await vm.completeOnboarding()
+
+        let saved = try XCTUnwrap(repository.savedProfile)
+        XCTAssertEqual(saved.name, "Alex")
+    }
+
+    func testCompleteOnboarding_guardAgainstDoubleCall() async throws {
+        let repository = MockUserProfileRepository()
+        let vm = try makeViewModel(repository: repository)
+        vm.name = "Alex"
+
+        // Simulate two rapid taps
+        async let first: Void = vm.completeOnboarding()
+        async let second: Void = vm.completeOnboarding()
+        await _ = (first, second)
+
+        // Should only save once due to isSaving guard
+        XCTAssertEqual(repository.saveCallCount, 1)
     }
 }

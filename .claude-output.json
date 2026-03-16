@@ -1,0 +1,26 @@
+{
+  "prTitle": "feat: implement OnboardingView container with animated step transitions and dashboard routing",
+  "prBody": "## Summary\n\n- Implements the full 4-step onboarding wizard (`OnboardingView`, `OnboardingViewModel`, and all step views)\n- Adds directional slide animations between wizard steps (forward/backward) with no visual glitching\n- Adds a step progress indicator (dot bar + step label) that accurately reflects current step\n- Completing the final step persists a `UserProfile` via `UserProfileRepository` and routes to `DashboardView`\n- Updates `RootView` to query SwiftData and route to onboarding or dashboard on launch\n- Adds placeholder `DashboardView` showing persisted calorie and macro targets\n- Adds comprehensive unit tests for `OnboardingViewModel` covering state transitions, `canProceed` validation, computed TDEE/macros, and profile persistence\n\nCloses #9",
+  "testsPass": true,
+  "filesChanged": [
+    "FitnessTracker/App/RootView.swift",
+    "FitnessTracker/Features/Onboarding/OnboardingView.swift",
+    "FitnessTracker/Features/Onboarding/OnboardingViewModel.swift",
+    "FitnessTracker/Features/Onboarding/Steps/WelcomeStepView.swift",
+    "FitnessTracker/Features/Onboarding/Steps/BiometricsStepView.swift",
+    "FitnessTracker/Features/Onboarding/Steps/ActivityGoalStepView.swift",
+    "FitnessTracker/Features/Onboarding/Steps/SummaryStepView.swift",
+    "FitnessTracker/Features/Dashboard/DashboardView.swift",
+    "FitnessTrackerTests/OnboardingViewModelTests.swift"
+  ],
+  "docsUpdated": [
+    "README.md"
+  ],
+  "docsReviewed": [
+    "docs/concepts/ios-fitness-tracker-app/LLD.md",
+    "docs/concepts/ios-fitness-tracker-app/HLD.md",
+    "docs/concepts/ios-fitness-tracker-app/tasks.yaml",
+    "docs/swiftdata-models.md"
+  ],
+  "completedTasks": [1, 2, 3, 4]
+}

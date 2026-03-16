@@ -1,164 +1,176 @@
 import Foundation
 import Observation
+import SwiftData
 
 // MARK: - OnboardingStep
 
-/// Ordered steps in the onboarding wizard.
+/// Enumeration of the four onboarding wizard steps.
 enum OnboardingStep: Int, CaseIterable {
-    case personalInfo  = 0  // Name, age, biological sex
-    case bodyMetrics   = 1  // Height, weight
-    case activityLevel = 2  // Activity level selection
-    case goal          = 3  // Fitness goal selection
+    case welcome = 0
+    case biometrics = 1
+    case activityGoal = 2
+    case summary = 3
 
-    var isFirst: Bool { self == .personalInfo }
-    var isLast:  Bool { self == .goal }
-
-    var next: OnboardingStep? {
-        OnboardingStep(rawValue: rawValue + 1)
-    }
-
-    var previous: OnboardingStep? {
-        OnboardingStep(rawValue: rawValue - 1)
+    var title: String {
+        switch self {
+        case .welcome:      return "Welcome"
+        case .biometrics:   return "Your Body"
+        case .activityGoal: return "Your Goals"
+        case .summary:      return "Summary"
+        }
     }
 }
 
 // MARK: - OnboardingViewModel
 
-/// ViewModel driving the 4-step onboarding wizard.
+/// `@Observable` view model driving the 4-step onboarding wizard.
 ///
-/// Wizard flow:
-/// 1. **Personal Info** — name, age, biological sex
-/// 2. **Body Metrics** — height (cm), weight (kg)
-/// 3. **Activity Level** — sedentary → extra active
-/// 4. **Goal** — cut / maintain / bulk
-///
-/// On completing the final step, `finishOnboarding()` synchronously computes
-/// TDEE (`TDEECalculator`) and macro targets (`MacroCalculator`), then
-/// persists a new `UserProfile` via the injected `UserProfileRepository`.
+/// Holds all biometric fields collected across steps, validates each step's
+/// required inputs via `canProceed`, and on final completion calls
+/// `TDEECalculator` + `MacroCalculator` to persist a `UserProfile` via the
+/// repository. Sets `isComplete = true` to trigger dashboard routing.
 @Observable
+@MainActor
 final class OnboardingViewModel {
 
-    // MARK: - Wizard navigation
+    // MARK: - Navigation State
 
-    /// The currently displayed wizard step.
-    private(set) var currentStep: OnboardingStep = .personalInfo
+    /// Zero-based index of the currently visible wizard step.
+    private(set) var currentStep: OnboardingStep = .welcome
 
-    // MARK: - Step 1: Personal Info
+    /// Total number of wizard steps.
+    let totalSteps: Int = OnboardingStep.allCases.count
+
+    /// Set to `true` when the user completes the final step and the profile
+    /// is successfully persisted. Observed by `OnboardingView` to trigger
+    /// dashboard navigation.
+    private(set) var isComplete: Bool = false
+
+    /// Non-nil when an error occurs during profile persistence.
+    private(set) var errorMessage: String? = nil
+
+    /// Whether the profile save is in progress.
+    private(set) var isSaving: Bool = false
+
+    // MARK: - Biometric Fields (Step 1 — Biometrics)
 
     var name: String = ""
     var age: Int = 25
     var gender: BiologicalSex = .male
-
-    // MARK: - Step 2: Body Metrics
-
-    /// Height in centimetres.
     var heightCm: Double = 170
-    /// Body weight in kilograms.
     var weightKg: Double = 70
 
-    // MARK: - Step 3: Activity Level
+    // MARK: - Goal Fields (Step 2 — Activity & Goal)
 
     var activityLevel: ActivityLevel = .moderatelyActive
-
-    // MARK: - Step 4: Goal
-
     var goal: FitnessGoal = .maintain
 
-    // MARK: - Async state
+    // MARK: - Computed Targets (derived in Step 3 — Summary)
 
-    /// `true` while `finishOnboarding()` is awaiting the repository save.
-    private(set) var isLoading: Bool = false
+    /// Goal-adjusted TDEE in kcal/day, computed from the current field values.
+    var computedTDEE: Double {
+        TDEECalculator.tdee(
+            gender: gender,
+            weightKg: weightKg,
+            heightCm: heightCm,
+            age: age,
+            activityLevel: activityLevel,
+            goal: goal
+        )
+    }
 
-    /// Populated when `finishOnboarding()` encounters an error.
-    private(set) var error: Error?
-
-    /// Set to `true` after the profile has been successfully persisted.
-    private(set) var isComplete: Bool = false
+    /// Macro targets derived from `computedTDEE`.
+    var computedMacros: MacroTargets {
+        MacroCalculator.macros(calories: computedTDEE, goal: goal)
+    }
 
     // MARK: - Dependencies
 
-    private let userProfileRepository: any UserProfileRepository
+    private let repository: any UserProfileRepository
+    private let context: ModelContext
 
     // MARK: - Init
 
-    /// - Parameter userProfileRepository: Repository used to persist the new `UserProfile`.
-    init(userProfileRepository: any UserProfileRepository) {
-        self.userProfileRepository = userProfileRepository
+    init(repository: any UserProfileRepository, context: ModelContext) {
+        self.repository = repository
+        self.context = context
     }
 
-    // MARK: - Validation
+    // MARK: - Step Validation
 
-    /// Whether the user has supplied enough data on the *current* step to advance.
-    var canAdvance: Bool {
+    /// Returns `true` when the current step's required fields are filled.
+    ///
+    /// Used by the "Continue" button to gate forward navigation.
+    var canProceed: Bool {
         switch currentStep {
-        case .personalInfo:
-            return !name.trimmingCharacters(in: .whitespaces).isEmpty && age > 0 && age <= 120
-        case .bodyMetrics:
-            return heightCm > 0 && weightKg > 0
-        case .activityLevel:
+        case .welcome:
             return true
-        case .goal:
+        case .biometrics:
+            return !name.trimmingCharacters(in: .whitespaces).isEmpty
+                && age >= 10 && age <= 120
+                && heightCm >= 50 && heightCm <= 300
+                && weightKg >= 20 && weightKg <= 500
+        case .activityGoal:
+            return true  // selectors always have a valid default
+        case .summary:
             return true
         }
     }
 
     // MARK: - Navigation
 
-    /// Moves to the next wizard step if validation passes and a next step exists.
+    /// Advances to the next wizard step, clamped to `totalSteps - 1`.
     func nextStep() {
-        guard canAdvance, let next = currentStep.next else { return }
-        currentStep = next
+        let nextIndex = currentStep.rawValue + 1
+        if nextIndex < totalSteps, let next = OnboardingStep(rawValue: nextIndex) {
+            currentStep = next
+        }
     }
 
-    /// Returns to the previous wizard step.
+    /// Returns to the previous wizard step, clamped to 0.
     func previousStep() {
-        guard let previous = currentStep.previous else { return }
-        currentStep = previous
+        let prevIndex = currentStep.rawValue - 1
+        if prevIndex >= 0, let prev = OnboardingStep(rawValue: prevIndex) {
+            currentStep = prev
+        }
     }
 
     // MARK: - Completion
 
-    /// Computes TDEE & macro targets, creates a `UserProfile`, and persists it.
+    /// Persists the collected data as a `UserProfile` and signals completion.
     ///
-    /// Call this when the user confirms the final wizard step.
-    /// Populates `isComplete` on success or `error` on failure.
-    func finishOnboarding() async {
-        guard canAdvance else { return }
+    /// Calls `TDEECalculator` and `MacroCalculator` to produce computed targets,
+    /// constructs a `UserProfile`, saves it via the repository, then sets
+    /// `isComplete = true` to trigger dashboard routing.
+    func completeOnboarding() async {
+        guard !isSaving else { return }
+        isSaving = true
+        errorMessage = nil
 
-        isLoading = true
-        error = nil
+        let tdee = computedTDEE
+        let macros = computedMacros
+
+        let profile = UserProfile(
+            name: name.trimmingCharacters(in: .whitespaces),
+            age: age,
+            gender: gender,
+            heightCm: heightCm,
+            weightKg: weightKg,
+            activityLevel: activityLevel,
+            goal: goal,
+            tdeeKcal: tdee,
+            proteinTargetG: macros.proteinG,
+            carbTargetG: macros.carbsG,
+            fatTargetG: macros.fatG
+        )
 
         do {
-            let tdee = TDEECalculator.calculate(
-                age: age,
-                gender: gender,
-                heightCm: heightCm,
-                weightKg: weightKg,
-                activityLevel: activityLevel
-            )
-
-            let macros = MacroCalculator.calculate(tdeeKcal: tdee, goal: goal)
-
-            let profile = UserProfile(
-                name: name.trimmingCharacters(in: .whitespaces),
-                age: age,
-                gender: gender,
-                heightCm: heightCm,
-                weightKg: weightKg,
-                activityLevel: activityLevel,
-                goal: goal,
-                tdeeKcal: tdee,
-                proteinTargetG: macros.proteinG,
-                carbTargetG: macros.carbsG,
-                fatTargetG: macros.fatG
-            )
-
-            try await userProfileRepository.save(profile)
+            try await repository.save(profile)
             isComplete = true
         } catch {
-            self.error = error
+            errorMessage = error.localizedDescription
         }
 
-        isLoading = false
+        isSaving = false
     }
 }
