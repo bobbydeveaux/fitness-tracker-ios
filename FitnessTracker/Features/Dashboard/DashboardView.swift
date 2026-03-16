@@ -5,13 +5,16 @@ import SwiftData
 
 /// Main dashboard view shown after onboarding is complete.
 ///
-/// This is a placeholder that will be fully implemented in a subsequent sprint
-/// task. It confirms routing away from the onboarding flow is working and that
-/// the user's profile has been persisted.
+/// Displays the user's welcome banner, daily macro progress via
+/// `MacroSummaryBar`, daily target tiles, and a quick-navigation card that
+/// routes to the full `NutritionView`.
 struct DashboardView: View {
 
     @Environment(AppEnvironment.self) private var env
     @Query private var profiles: [UserProfile]
+
+    @State private var nutritionViewModel: NutritionViewModel?
+    @State private var showingNutrition: Bool = false
 
     private var profile: UserProfile? { profiles.first }
 
@@ -21,6 +24,16 @@ struct DashboardView: View {
                 VStack(spacing: 24) {
                     if let profile {
                         WelcomeBannerView(profile: profile)
+
+                        // Live macro progress
+                        if let nutritionViewModel {
+                            NutritionSummaryWidget(
+                                viewModel: nutritionViewModel,
+                                profile: profile,
+                                onTap: { showingNutrition = true }
+                            )
+                        }
+
                         DailyTargetsView(profile: profile)
                     } else {
                         ContentUnavailableView(
@@ -35,10 +48,69 @@ struct DashboardView: View {
             }
             .navigationTitle("Dashboard")
             .navigationBarTitleDisplayMode(.large)
+            .navigationDestination(isPresented: $showingNutrition) {
+                NutritionView(repository: env.nutritionRepository)
+            }
             .task {
                 await env.healthKitService.requestAuthorisationIfNeeded()
+                setupNutritionViewModel()
+            }
+            .onChange(of: profiles) { _, _ in
+                setupNutritionViewModel()
             }
         }
+    }
+
+    // MARK: - Private
+
+    private func setupNutritionViewModel() {
+        if nutritionViewModel == nil {
+            let vm = NutritionViewModel(repository: env.nutritionRepository)
+            nutritionViewModel = vm
+            Task { await vm.loadTodaysLogs() }
+        }
+    }
+}
+
+// MARK: - NutritionSummaryWidget
+
+/// A tappable card on the Dashboard that shows today's calorie and macro
+/// progress. Tapping it navigates to the full `NutritionView`.
+private struct NutritionSummaryWidget: View {
+    let viewModel: NutritionViewModel
+    let profile: UserProfile
+    let onTap: () -> Void
+
+    var body: some View {
+        Button(action: onTap) {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Label("Today's Nutrition", systemImage: "fork.knife")
+                        .font(.headline)
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                MacroSummaryBar(
+                    consumedKcal: viewModel.totalKcal,
+                    consumedProteinG: viewModel.totalProteinG,
+                    consumedCarbG: viewModel.totalCarbG,
+                    consumedFatG: viewModel.totalFatG,
+                    targetKcal: profile.tdeeKcal,
+                    targetProteinG: profile.proteinTargetG,
+                    targetCarbG: profile.carbTargetG,
+                    targetFatG: profile.fatTargetG
+                )
+            }
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color(.secondarySystemBackground))
+            )
+        }
+        .buttonStyle(.plain)
     }
 }
 
