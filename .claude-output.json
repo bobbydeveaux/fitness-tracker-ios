@@ -1,0 +1,14 @@
+{
+  "alreadyImplemented": true,
+  "prTitle": "chore: close duplicate - SessionViewModel state machine already implemented",
+  "prBody": "## Summary\n\nThe requested feature — `SessionViewModel` state machine with rest timer — is already fully implemented in the codebase.\n\n### What exists\n\n**`FitnessTracker/Features/Session/SessionViewModel.swift`** (367 lines)\n\nComplete `@Observable @MainActor final class SessionViewModel` with:\n\n- **State machine**: `idle → active ⇄ paused → complete / abandoned` via `SessionState` enum\n- **Elapsed timer**: `Timer.publish` backed `AnyCancellable`, increments `elapsedSeconds` every second, pauses/resumes correctly\n- **Rest timer**: Configurable `restTimerDuration` (default 90 s), countdown via `AnyCancellable`, `cancelRestTimer()` / `startRestTimer(duration:)` public API, `restTimerSecondsRemaining`, `restTimerFormatted`, and `restTimerProgress` computed properties\n- **Set logging**: `completeSet(exerciseIndex:setIndex:weightKg:reps:rpe:)` persists via `WorkoutRepository`, detects PRs, auto-starts rest timer\n- **PR detection**: Weight-based comparison against `previousBest`; first set without history always counts as PR\n- **Session lifecycle**: `startSession()`, `pauseSession()`, `resumeSession()`, `finishSession()`, `abandonSession()` all implemented\n- **HealthKit write** on completion via `HealthKitServiceProtocol`\n- **Supporting types**: `ExerciseSessionEntry`, `SessionSummaryData`\n\n**`FitnessTrackerTests/SessionViewModelTests.swift`** (305 lines)\n\n28 unit tests covering:\n- Initial state\n- Session lifecycle transitions\n- Pause/resume\n- Set completion (weight, PR detection, volume, rest timer trigger)\n- Rest timer cancel/progress\n- Elapsed time formatting\n- Summary data correctness\n\nNo changes are needed — the implementation is complete.\n\nCloses #60",
+  "explanation": "The requested functionality already exists with:\n- Full SessionViewModel state machine (idle/active/paused/complete/abandoned) at FitnessTracker/Features/Session/SessionViewModel.swift\n- Rest timer implementation with startRestTimer(), cancelRestTimer(), restTimerSecondsRemaining, restTimerFormatted, restTimerProgress\n- 28 comprehensive unit tests at FitnessTrackerTests/SessionViewModelTests.swift\n- All supporting UI components (ActiveSessionView, RestTimerView, ExerciseSetRow, SessionSummaryView) already built\nNo changes are needed.",
+  "testsPass": true,
+  "filesChanged": [],
+  "docsUpdated": [],
+  "docsReviewed": [
+    "docs/concepts/ios-fitness-tracker-app/HLD.md",
+    "docs/concepts/ios-fitness-tracker-app/LLD.md",
+    "docs/swiftdata-models.md"
+  ]
+}
