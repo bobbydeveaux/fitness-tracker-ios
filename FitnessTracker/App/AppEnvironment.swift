@@ -20,14 +20,15 @@ import SwiftData
 /// ```
 /// FitnessTrackerApp
 ///   └─ AppEnvironment
-///        ├─ ModelContainer          (SwiftData, shared by all repositories)
-///        ├─ UserProfileRepository   (protocol → SwiftDataUserProfileRepository)
-///        ├─ NutritionRepository     (protocol → SwiftDataNutritionRepository)
-///        ├─ WorkoutRepository       (protocol → SwiftDataWorkoutRepository)
-///        ├─ ProgressRepository      (protocol → SwiftDataProgressRepository)
-///        ├─ ExerciseLibraryService  (in-memory JSON cache)
-///        ├─ KeychainService         (Security framework wrapper)
-///        └─ HealthKitService        (HKHealthStore wrapper)
+///        ├─ ModelContainer              (SwiftData, shared by all repositories)
+///        ├─ UserProfileRepository       (protocol → SwiftDataUserProfileRepository)
+///        ├─ NutritionRepository         (protocol → SwiftDataNutritionRepository)
+///        ├─ WorkoutRepository           (protocol → SwiftDataWorkoutRepository)
+///        ├─ ProgressRepository          (protocol → SwiftDataProgressRepository)
+///        ├─ ExerciseLibraryService      (in-memory JSON cache)
+///        ├─ KeychainService             (Security framework wrapper)
+///        ├─ HealthKitService            (HKHealthStore wrapper)
+///        └─ NotificationScheduler       (UNUserNotificationCenter wrapper)
 /// ```
 @Observable
 final class AppEnvironment {
@@ -64,6 +65,9 @@ final class AppEnvironment {
     /// Wraps `HKHealthStore` for HealthKit reads and workout writes.
     let healthKitService: any HealthKitServiceProtocol
 
+    /// Wraps `UNUserNotificationCenter` for scheduling workout-reminder notifications.
+    let notificationScheduler: any NotificationSchedulerProtocol
+
     // MARK: - Init
 
     /// Memberwise initialiser used for production setup and for injecting test doubles.
@@ -77,6 +81,7 @@ final class AppEnvironment {
     ///   - exerciseLibraryService: Service for exercise JSON management.
     ///   - keychainService: Service for Keychain access.
     ///   - healthKitService: Service for HealthKit access.
+    ///   - notificationScheduler: Service for scheduling workout-reminder notifications.
     init(
         modelContainer: ModelContainer,
         userProfileRepository: any UserProfileRepository,
@@ -85,7 +90,8 @@ final class AppEnvironment {
         progressRepository: any ProgressRepository,
         exerciseLibraryService: ExerciseLibraryService = ExerciseLibraryService(),
         keychainService: KeychainService = KeychainService(),
-        healthKitService: any HealthKitServiceProtocol = HealthKitService.shared
+        healthKitService: any HealthKitServiceProtocol = HealthKitService.shared,
+        notificationScheduler: any NotificationSchedulerProtocol = NotificationScheduler.shared
     ) {
         self.modelContainer = modelContainer
         self.userProfileRepository = userProfileRepository
@@ -95,6 +101,7 @@ final class AppEnvironment {
         self.exerciseLibraryService = exerciseLibraryService
         self.keychainService = keychainService
         self.healthKitService = healthKitService
+        self.notificationScheduler = notificationScheduler
     }
 }
 
