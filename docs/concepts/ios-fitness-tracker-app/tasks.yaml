@@ -1,221 +1,362 @@
-GeneratedAt: "2026-03-16T15:34:46Z"
+GeneratedAt: "2026-03-16T17:00:31Z"
 Plan: ios-fitness-tracker-app-plan
 Sprints:
 - Features:
-  - FeatureID: ios-fitness-tracker-app-feat-foundation
-    FeatureTitle: App Foundation, SwiftData Schema & Services
+  - FeatureID: ios-fitness-tracker-app-feat-nutrition-logging
+    FeatureTitle: Meal Logging with Food Search, Barcode Scanner & Custom Foods
     Tasks:
     - AcceptanceCriteria:
-      - FitnessTrackerApp.swift compiles and launches on iOS 17 simulator with AppEnvironment
-        injected via .environment
-      - AppEnvironment exposes typed properties for all services and repositories
-        without circular dependencies
-      - Folder structure matches the specified layout (App/, Models/, Features/, Services/,
-        Repositories/, Resources/)
+      - NutritionViewModel exposes today's macro totals that recompute when entries
+        are added or deleted
+      - MealLogEntry and FoodItem SwiftData models persist across app launches
+      - NutritionRepository CRUD operations (add, delete, fetchToday) function correctly
+      - Macro totals are accessible from AppEnvironment for dashboard consumption
       AgentType: frontend-engineer
       Dependencies: []
-      Description: Create the Xcode project with the feature-module folder structure
-        and single target. Implement the AppEnvironment @Observable DI container that
-        holds all service singletons and is injected at the root SwiftUI entry point.
-      EstimatedEffort: S
+      Description: Build NutritionViewModel as the @Observable core of the nutrition
+        module. Implement SwiftData models for MealLogEntry and FoodItem, a NutritionRepository,
+        and real-time daily macro totals computed from today's entries. Expose published
+        state for calorie/protein/carb/fat totals consumed by views and the dashboard.
+      EstimatedEffort: M
       Files:
-      - FitnessTracker/App/FitnessTrackerApp.swift
-      - FitnessTracker/App/AppEnvironment.swift
-      ID: task-ios-fitness-tracker-app-feat-foundation-1
-      Title: Xcode Project Setup & AppEnvironment DI Container
+      - FitnessTracker/Features/Nutrition/NutritionViewModel.swift
+      ID: task-ios-fitness-tracker-app-feat-nutrition-logging-1
+      Title: Implement NutritionViewModel with SwiftData persistence and macro aggregation
     - AcceptanceCriteria:
-      - All model types compile with @Model and correct @Relationship annotations
-        including inverses
-      - AppSchema.swift defines a VersionedSchema with at least V1 and the ModelContainer
-        builds without migration errors
-      - ModelContainer can be instantiated in an XCTest with an in-memory configuration
-        without crashing
-      AgentType: backend-engineer
-      Dependencies: []
-      Description: Define all 12 SwiftData model classes (UserProfile, FoodItem, MealLog,
-        MealEntry, Exercise, WorkoutPlan, WorkoutDay, PlannedExercise, WorkoutSession,
-        LoggedSet, BodyMetric, Streak) with proper relationships, inverse references,
-        and cascade delete rules. Bundle them into a VersionedSchema in AppSchema.swift
-        and configure the ModelContainer with CloudKit private DB support.
+      - Typing in the search bar returns matching foods within 300ms via FTS prefix
+        query
+      - Results display food name, serving size, and macro breakdown
+      - Empty state and no-results state are handled gracefully
+      - Selected food item is returned to the caller via a completion/binding
+      AgentType: frontend-engineer
+      Dependencies:
+      - task-ios-fitness-tracker-app-feat-nutrition-logging-1
+      Description: Implement FoodSearchView that performs full-text prefix-match search
+        over a bundled SQLite food index. Wire a search bar to debounced FTS queries
+        returning FoodItem results with name, serving size, and macros. Tapping a
+        result passes the selected food back to the meal log entry flow.
+      EstimatedEffort: M
+      Files:
+      - FitnessTracker/Features/Nutrition/FoodSearchView.swift
+      ID: task-ios-fitness-tracker-app-feat-nutrition-logging-2
+      Title: Build FoodSearchView with FTS prefix-match over bundled food index
+    - AcceptanceCriteria:
+      - Camera preview renders and detects EAN-13/UPC-A barcodes in real time
+      - BarcodeLookupService returns a FoodItem for a known barcode within one frame
+        capture
+      - Unknown barcode displays an actionable error (e.g., offer manual search fallback)
+      - Camera permission denial is handled with an explanatory prompt
+      AgentType: frontend-engineer
+      Dependencies:
+      - task-ios-fitness-tracker-app-feat-nutrition-logging-1
+      Description: Build BarcodeScannerView using AVFoundation to capture EAN-13 and
+        UPC-A barcodes via the camera. Implement BarcodeLookupService for local lookup
+        against the bundled food index by barcode field. On a successful scan, dismiss
+        the scanner and pass the resolved FoodItem to the meal log entry flow; show
+        an error state if the barcode is not found.
+      EstimatedEffort: M
+      Files:
+      - FitnessTracker/Features/Nutrition/BarcodeScannerView.swift
+      - FitnessTracker/Services/BarcodeLookupService.swift
+      ID: task-ios-fitness-tracker-app-feat-nutrition-logging-3
+      Title: Implement BarcodeScannerView and BarcodeLookupService
+    - AcceptanceCriteria:
+      - Custom food form validates all required fields and persists the FoodItem to
+        SwiftData
+      - Custom foods appear in FoodSearch results alongside bundled foods
+      - Meal templates can be saved from any meal log entry and re-loaded as a new
+        entry
+      - Templates list supports delete via swipe-to-delete
+      AgentType: frontend-engineer
+      Dependencies:
+      - task-ios-fitness-tracker-app-feat-nutrition-logging-1
+      Description: Implement CustomFoodFormView as a validated form for creating user-defined
+        FoodItems (name, serving size, calories, macros) persisted via NutritionRepository.
+        Build MealTemplatesView to list, save, and re-use named meal templates (collections
+        of FoodItems with quantities), allowing one-tap addition of a full template
+        to the current meal log.
+      EstimatedEffort: M
+      Files:
+      - FitnessTracker/Features/Nutrition/CustomFoodFormView.swift
+      - FitnessTracker/Features/Nutrition/MealTemplatesView.swift
+      ID: task-ios-fitness-tracker-app-feat-nutrition-logging-4
+      Title: Build CustomFoodFormView and MealTemplatesView
+    - AcceptanceCriteria:
+      - NutritionView lists today's logged meals and shows live macro totals in MacroSummaryBar
+      - MealLogEntryView allows food selection via search, barcode scan, or custom
+        form, then saves with adjustable serving size
+      - Dashboard macro ring/widget updates immediately after a meal log entry is
+        saved
+      - Deleting a meal entry removes it from the log and decrements macro totals
+        in real time
+      AgentType: frontend-engineer
+      Dependencies:
+      - task-ios-fitness-tracker-app-feat-nutrition-logging-1
+      - task-ios-fitness-tracker-app-feat-nutrition-logging-2
+      - task-ios-fitness-tracker-app-feat-nutrition-logging-3
+      - task-ios-fitness-tracker-app-feat-nutrition-logging-4
+      Description: Build the top-level NutritionView showing today's meal log grouped
+        by meal type, with a MacroSummaryBar component displaying progress rings for
+        calories and macros. Implement MealLogEntryView as the sheet that composes
+        FoodSearchView, BarcodeScannerView, and CustomFoodFormView into a single add-food
+        flow with quantity/serving adjustment before committing to NutritionViewModel.
+        Wire macro totals back to DashboardViewModel so the dashboard reflects live
+        nutrition state.
       EstimatedEffort: L
       Files:
-      - FitnessTracker/Models/UserProfile.swift
-      - FitnessTracker/Models/FoodItem.swift
-      - FitnessTracker/Models/MealLog.swift
-      - FitnessTracker/Models/MealEntry.swift
-      - FitnessTracker/Models/Exercise.swift
+      - FitnessTracker/Features/Nutrition/NutritionView.swift
+      - FitnessTracker/Features/Nutrition/MealLogEntryView.swift
+      - FitnessTracker/Features/Nutrition/Components/MacroSummaryBar.swift
+      ID: task-ios-fitness-tracker-app-feat-nutrition-logging-5
+      Title: Assemble NutritionView, MealLogEntryView, and MacroSummaryBar with dashboard
+        integration
+  - FeatureID: ios-fitness-tracker-app-feat-settings
+    FeatureTitle: Settings, Push Notifications & Optional CloudKit Sync
+    Tasks:
+    - AcceptanceCriteria:
+      - requestPermission() returns authorization status and updates a published property
+      - scheduleReminders(days:time:) creates one UNNotificationRequest per selected
+        weekday with correct calendar trigger
+      - Calling scheduleReminders again removes previously scheduled fitness-reminder
+        notifications before re-adding
+      - cancelAll() removes all pending fitness-reminder notifications
+      AgentType: backend-engineer
+      Dependencies: []
+      Description: Build the NotificationScheduler service that requests notification
+        permissions, schedules repeating workout reminder notifications for user-selected
+        weekdays and a chosen time using UNCalendarNotificationTrigger, and cancels/replaces
+        existing reminders when preferences change.
+      EstimatedEffort: S
+      Files:
+      - FitnessTracker/Services/NotificationScheduler.swift
+      ID: task-ios-fitness-tracker-app-feat-settings-1
+      Title: Implement NotificationScheduler with UNUserNotificationCenter
+    - AcceptanceCriteria:
+      - iCloudAvailable computed property returns false when no iCloud account is
+        signed in
+      - Enabling sync reconfigures ModelContainer with CloudKit private database entitlement
+      - syncState publishes .error with a user-readable message on CKError receipt
+      - CloudKit sync toggle is disabled when iCloudAvailable is false
+      AgentType: backend-engineer
+      Dependencies: []
+      Description: Build CloudSyncService that detects iCloud account availability
+        via FileManager/CKContainer, toggles SwiftData ModelConfiguration between
+        local-only and CloudKit private DB, listens for NSPersistentCloudKitContainer
+        sync notifications, and publishes a CloudSyncState (idle/syncing/error) with
+        a descriptive error message for the UI to display as a banner.
+      EstimatedEffort: M
+      Files:
+      - FitnessTracker/Services/CloudSyncService.swift
+      ID: task-ios-fitness-tracker-app-feat-settings-2
+      Title: Implement CloudSyncService with CloudKit monitoring and error surfacing
+    - AcceptanceCriteria:
+      - Appearance toggle persists selection and overrides app colorScheme between
+        light/dark; defaults to dark on first launch
+      - NotificationSettingsView allows toggling individual weekdays and picking a
+        time; changes trigger NotificationScheduler.scheduleReminders
+      - CloudKit sync row shows a non-interactive error banner when CloudSyncService.syncState
+        == .error
+      - All settings survive app termination and are restored on next launch
+      AgentType: frontend-engineer
+      Dependencies:
+      - task-ios-fitness-tracker-app-feat-settings-1
+      - task-ios-fitness-tracker-app-feat-settings-2
+      Description: Implement SettingsViewModel coordinating NotificationScheduler
+        and CloudSyncService, a SettingsView with appearance toggle (dark default),
+        CloudKit sync toggle with error banner, and a NotificationSettingsView for
+        selecting reminder days (multi-select weekday grid) and time (DatePicker).
+        Persist all preferences to UserDefaults/SwiftData and apply colorScheme override
+        app-wide.
+      EstimatedEffort: M
+      Files:
+      - FitnessTracker/Features/Settings/SettingsView.swift
+      - FitnessTracker/Features/Settings/SettingsViewModel.swift
+      - FitnessTracker/Features/Settings/NotificationSettingsView.swift
+      ID: task-ios-fitness-tracker-app-feat-settings-3
+      Title: Build SettingsView, NotificationSettingsView, and SettingsViewModel
+  Sprint: 3
+- Features:
+  - FeatureID: ios-fitness-tracker-app-feat-dashboard
+    FeatureTitle: Dashboard with Progress Rings & Streak
+    Tasks:
+    - AcceptanceCriteria:
+      - StreakEngine correctly returns current streak count given a list of dates
+      - Streak resets to 0 when there is a gap of more than one day
+      - Today's activity extends an existing streak correctly
+      - 'Unit tests cover at least: zero streak, single-day streak, multi-day streak,
+        and gap reset'
+      AgentType: backend-engineer
+      Dependencies: []
+      Description: Build the StreakEngine struct that computes the current streak
+        from a sorted array of activity dates. It should handle edge cases like today
+        already counted, gaps, and zero-streak states. This is pure domain logic with
+        no SwiftUI or SwiftData dependencies.
+      EstimatedEffort: S
+      Files:
+      - FitnessTracker/Domain/StreakEngine.swift
+      ID: task-ios-fitness-tracker-app-feat-dashboard-1
+      Title: Implement StreakEngine domain logic
+    - AcceptanceCriteria:
+      - DashboardState contains today's calorie total, macro breakdown, step count,
+        and streak count
+      - ViewModel refreshes data on foreground return using appropriate lifecycle
+        hooks
+      - Macro and calorie totals correctly sum only today's logged meals from SwiftData
+      - HealthKit step count fetch failure is handled gracefully (defaults to 0)
+      AgentType: backend-engineer
+      Dependencies:
+      - task-ios-fitness-tracker-app-feat-dashboard-1
+      Description: Build DashboardViewModel as an @Observable class that queries SwiftData
+        for today's consumed calories and macros, reads step count from HealthKitService,
+        and invokes StreakEngine to produce a single DashboardState value. Expose
+        a load() async method and a refreshable trigger for the view.
+      EstimatedEffort: M
+      Files:
+      - FitnessTracker/Features/Dashboard/DashboardViewModel.swift
+      ID: task-ios-fitness-tracker-app-feat-dashboard-2
+      Title: Implement DashboardViewModel with DashboardState aggregation
+    - AcceptanceCriteria:
+      - ProgressRingView animates smoothly from 0 to target progress using withAnimation
+        on appear
+      - Ring correctly clamps progress values outside 0–1 range
+      - StreakBannerView displays streak count and is hidden when streak is 0
+      - Both components render correctly in Xcode Previews with sample data
+      AgentType: frontend-engineer
+      Dependencies: []
+      Description: Implement ProgressRingView as a reusable SwiftUI view that renders
+        an animated circular progress ring with a label, accepting a progress value
+        (0–1), color, and title. Implement StreakBannerView to display the current
+        streak count with a flame icon and animate in when streak > 0.
+      EstimatedEffort: M
+      Files:
+      - FitnessTracker/Features/Dashboard/Components/ProgressRingView.swift
+      - FitnessTracker/Features/Dashboard/Components/StreakBannerView.swift
+      ID: task-ios-fitness-tracker-app-feat-dashboard-3
+      Title: Build ProgressRingView and StreakBannerView components
+    - AcceptanceCriteria:
+      - DashboardView renders all three progress rings (calories, protein, steps)
+        bound to DashboardState
+      - Weekly summary cards show the past 7 days in a horizontally scrollable row
+      - Quick-add buttons for meals and workouts trigger correct navigation actions
+      - View calls viewModel.load() on task and supports pull-to-refresh
+      AgentType: frontend-engineer
+      Dependencies:
+      - task-ios-fitness-tracker-app-feat-dashboard-2
+      - task-ios-fitness-tracker-app-feat-dashboard-3
+      Description: Implement WeeklySummaryCard to display a single day's calorie and
+        step summary in a compact card layout. Assemble DashboardView using DashboardViewModel,
+        composing the progress rings, streak banner, a horizontal scroll of weekly
+        summary cards, and quick-add buttons for meals and workouts that navigate
+        to the appropriate feature screens.
+      EstimatedEffort: M
+      Files:
+      - FitnessTracker/Features/Dashboard/Components/WeeklySummaryCard.swift
+      - FitnessTracker/Features/Dashboard/DashboardView.swift
+      ID: task-ios-fitness-tracker-app-feat-dashboard-4
+      Title: Build WeeklySummaryCard and DashboardView with quick-add buttons
+  - FeatureID: ios-fitness-tracker-app-feat-workout-plan
+    FeatureTitle: AI Workout Plan Generation & Exercise Library
+    Tasks:
+    - AcceptanceCriteria:
+      - WorkoutPlan, WorkoutDay, PlannedExercise are @Model classes with correct relationships
+        registered in the shared ModelContainer
+      - Exercise struct includes name, muscleGroups, equipment, instructions fields
+      - Bundled exercises.json resource loads without error and contains entries covering
+        major muscle groups and equipment types
+      AgentType: backend-engineer
+      Dependencies: []
+      Description: Create SwiftData model classes for WorkoutPlan, WorkoutDay, and
+        PlannedExercise with appropriate relationships and persistence annotations.
+        Define the Exercise struct and bundle the static exercise library JSON resource
+        with muscle-group and equipment metadata.
+      EstimatedEffort: M
+      Files:
       - FitnessTracker/Models/WorkoutPlan.swift
       - FitnessTracker/Models/WorkoutDay.swift
       - FitnessTracker/Models/PlannedExercise.swift
-      - FitnessTracker/Models/WorkoutSession.swift
-      - FitnessTracker/Models/LoggedSet.swift
-      - FitnessTracker/Models/BodyMetric.swift
-      - FitnessTracker/Models/Streak.swift
-      - FitnessTracker/Models/AppSchema.swift
-      ID: task-ios-fitness-tracker-app-feat-foundation-2
-      Title: SwiftData Models & Versioned Schema
+      - FitnessTracker/Models/Exercise.swift
+      - FitnessTracker/Resources/exercises.json
+      ID: task-ios-fitness-tracker-app-feat-workout-plan-1
+      Title: Define WorkoutPlan SwiftData models and Exercise library data
     - AcceptanceCriteria:
-      - All four protocol files compile with Swift concurrency-safe signatures (async/throws)
-      - Each SwiftData implementation conforms to its protocol and performs basic
-        insert/fetch/delete against an in-memory ModelContainer in unit tests
-      - No SwiftData model types are imported directly outside the repository layer
+      - ClaudeAPIClient.generatePlan(profile:) returns a populated WorkoutPlan on
+        a successful 200 response with valid JSON
+      - API errors (network failure, non-200 status, decode failure) throw a typed
+        error and the caller can catch it
+      - FallbackPlanProvider.generatePlan(profile:) returns a non-empty WorkoutPlan
+        without any network call
+      - Prompt includes all four input fields and requests JSON matching the WorkoutPlanResponse
+        schema
       AgentType: backend-engineer
       Dependencies:
-      - task-ios-fitness-tracker-app-feat-foundation-2
-      Description: Define the four repository protocols (UserProfileRepository, NutritionRepository,
-        WorkoutRepository, ProgressRepository) with async throwing CRUD and query
-        methods. Implement each protocol using SwiftData ModelContext, using @ModelActor
-        for background-safe access where appropriate.
+      - task-ios-fitness-tracker-app-feat-workout-plan-1
+      Description: Build ClaudeAPIClient to construct a structured prompt from user
+        inputs (goal, experience, equipment, days/week), POST it to the Claude API
+        (claude-opus-4-6), and decode the JSON WorkoutPlanResponse into SwiftData
+        entities. Implement FallbackPlanProvider that returns a hardcoded template
+        plan when the API call fails or no network is available.
       EstimatedEffort: L
       Files:
-      - FitnessTracker/Repositories/Protocols/UserProfileRepository.swift
-      - FitnessTracker/Repositories/Protocols/NutritionRepository.swift
-      - FitnessTracker/Repositories/Protocols/WorkoutRepository.swift
-      - FitnessTracker/Repositories/Protocols/ProgressRepository.swift
-      - FitnessTracker/Repositories/SwiftData/SwiftDataUserProfileRepository.swift
-      - FitnessTracker/Repositories/SwiftData/SwiftDataNutritionRepository.swift
-      - FitnessTracker/Repositories/SwiftData/SwiftDataWorkoutRepository.swift
-      - FitnessTracker/Repositories/SwiftData/SwiftDataProgressRepository.swift
-      ID: task-ios-fitness-tracker-app-feat-foundation-3
-      Title: Repository Protocols & SwiftData Implementations
+      - FitnessTracker/Services/ClaudeAPIClient.swift
+      - FitnessTracker/Services/FallbackPlanProvider.swift
+      ID: task-ios-fitness-tracker-app-feat-workout-plan-2
+      Title: Implement ClaudeAPIClient and FallbackPlanProvider
     - AcceptanceCriteria:
-      - exercises.json is bundled and successfully decoded into Exercise model instances
-        without runtime errors
-      - ExerciseLibraryService seeds exercises exactly once; re-launching the app
-        does not duplicate records
-      - KeychainService can save, read, and delete a String value for a given key
-        using kSecClassGenericPassword
+      - generatePlan() transitions state through loading → success/error and stores
+        the plan via SwiftData ModelContext
+      - On ClaudeAPIClient failure, FallbackPlanProvider result is persisted and a
+        non-fatal warning state is set
+      - Previously persisted plan is loaded on init so the view does not require a
+        re-generation on relaunch
       AgentType: backend-engineer
       Dependencies:
-      - task-ios-fitness-tracker-app-feat-foundation-2
-      - task-ios-fitness-tracker-app-feat-foundation-3
-      Description: Implement ExerciseLibraryService to decode exercises.json from
-        the app bundle and upsert Exercise records into SwiftData on first launch
-        using a UserDefaults flag. Implement KeychainService wrapping Security framework
-        for storing sensitive user tokens. Wire both services into AppEnvironment
-        and trigger seeding from FitnessTrackerApp on first run.
+      - task-ios-fitness-tracker-app-feat-workout-plan-2
+      Description: 'Create WorkoutPlanViewModel as an @Observable class that orchestrates
+        plan generation: calls ClaudeAPIClient, falls back to FallbackPlanProvider
+        on error, persists the resulting WorkoutPlan to SwiftData, and exposes loading/error/plan
+        state for the view layer.'
       EstimatedEffort: M
       Files:
-      - FitnessTracker/Services/ExerciseLibraryService.swift
-      - FitnessTracker/Services/KeychainService.swift
-      - FitnessTracker/Resources/exercises.json
-      - FitnessTracker/App/FitnessTrackerApp.swift
-      - FitnessTracker/App/AppEnvironment.swift
-      ID: task-ios-fitness-tracker-app-feat-foundation-4
-      Title: ExerciseLibraryService, KeychainService & First-Launch Seed
-  Sprint: 1
-- Features:
-  - FeatureID: ios-fitness-tracker-app-feat-onboarding
-    FeatureTitle: Onboarding Wizard with TDEE & Macro Calculation
-    Tasks:
+      - FitnessTracker/Features/Workout/WorkoutPlanViewModel.swift
+      ID: task-ios-fitness-tracker-app-feat-workout-plan-3
+      Title: Implement WorkoutPlanViewModel with generation and persistence logic
     - AcceptanceCriteria:
-      - TDEECalculator produces correct BMR and TDEE for known reference inputs (male
-        30y 180cm 80kg sedentary = ~2,500 kcal TDEE)
-      - MacroCalculator distributes macros within ±1g of expected split for each goal
-        type
-      - Unit tests cover all activity levels, both genders, and all fitness goals
-        without mocking
-      AgentType: backend-engineer
-      Dependencies: []
-      Description: Implement TDEECalculator using the Mifflin-St Jeor equation supporting
-        both biological sexes, all activity multipliers, and fitness goal adjustments
-        (cut/maintain/bulk). Implement MacroCalculator to derive protein, carb, and
-        fat gram targets from TDEE and goal. Both types must be pure, framework-free
-        structs with no SwiftData or SwiftUI imports.
-      EstimatedEffort: S
-      Files:
-      - FitnessTracker/Domain/TDEECalculator.swift
-      - FitnessTracker/Domain/MacroCalculator.swift
-      ID: task-ios-fitness-tracker-app-feat-onboarding-1
-      Title: 'Implement domain calculators: TDEECalculator and MacroCalculator'
-    - AcceptanceCriteria:
-      - currentStep advances forward and backward correctly, clamped to valid range
-      - Completion path creates a UserProfile in the SwiftData context with correct
-        TDEE and macro values
-      - canProceed computed property is false when required fields for the current
-        step are empty
-      - Unit tests validate state transitions and final UserProfile values without
-        a live ModelContainer
+      - WorkoutPlanView renders split type header and one WorkoutDayCard per WorkoutDay
+        in the plan
+      - Loading state shows a progress indicator; error state shows an inline error
+        message with retry affordance
+      - WorkoutDayCard displays exercise name, sets, and reps for each PlannedExercise
+      - Generate button is disabled while loading and re-enabled on success or error
       AgentType: frontend-engineer
       Dependencies:
-      - task-ios-fitness-tracker-app-feat-onboarding-1
-      Description: Implement the 4-step wizard state machine in OnboardingViewModel
-        (@Observable), holding collected biometric fields (age, gender, height, weight,
-        activityLevel, goal). On completion, invoke TDEECalculator and MacroCalculator,
-        construct a UserProfile, persist it via the SwiftData ModelContext, and publish
-        a navigation signal to route to the dashboard.
+      - task-ios-fitness-tracker-app-feat-workout-plan-3
+      Description: Implement WorkoutPlanView that displays the generated plan's split
+        type, a scrollable list of WorkoutDayCards, and a generate/regenerate button
+        bound to WorkoutPlanViewModel. WorkoutDayCard shows the day label and a compact
+        list of planned exercises with sets/reps.
       EstimatedEffort: M
       Files:
-      - FitnessTracker/Features/Onboarding/OnboardingViewModel.swift
-      ID: task-ios-fitness-tracker-app-feat-onboarding-2
-      Title: Implement OnboardingViewModel with wizard state and SwiftData persistence
+      - FitnessTracker/Features/Workout/WorkoutPlanView.swift
+      - FitnessTracker/Features/Workout/Components/WorkoutDayCard.swift
+      ID: task-ios-fitness-tracker-app-feat-workout-plan-4
+      Title: Build WorkoutPlanView and WorkoutDayCard UI
     - AcceptanceCriteria:
-      - Each step view renders correctly in Xcode Previews with sample ViewModel state
-      - BiometricsStepView enforces numeric-only keyboard and valid range for all
-        fields
-      - SummaryStepView accurately reflects TDEE and per-macro gram values from the
-        ViewModel
-      - All interactive controls (pickers, steppers, buttons) update the ViewModel
-        binding
+      - ExerciseLibraryView lists all bundled exercises and updates instantly when
+        muscle-group or equipment filter changes
+      - Selecting an exercise navigates to ExerciseDetailView showing name, muscle
+        groups, equipment, and instructions
+      - Both filters set to 'All' shows the complete library with no exercises hidden
       AgentType: frontend-engineer
       Dependencies:
-      - task-ios-fitness-tracker-app-feat-onboarding-2
-      Description: Implement all four step views as standalone SwiftUI views bound
-        to the ViewModel. WelcomeStepView renders branding and CTA. BiometricsStepView
-        provides age/height/weight inputs and a gender picker. ActivityGoalStepView
-        presents activity-level and fitness-goal selectors. SummaryStepView displays
-        the computed TDEE and macro breakdown before the user confirms.
+      - task-ios-fitness-tracker-app-feat-workout-plan-1
+      Description: Implement ExerciseLibraryView that loads the bundled exercise library
+        and exposes muscle-group and equipment Picker filters, rendering a filtered
+        list of exercises. ExerciseDetailView shows full exercise metadata including
+        instructions and muscle diagram placeholder.
       EstimatedEffort: M
       Files:
-      - FitnessTracker/Features/Onboarding/Steps/WelcomeStepView.swift
-      - FitnessTracker/Features/Onboarding/Steps/BiometricsStepView.swift
-      - FitnessTracker/Features/Onboarding/Steps/ActivityGoalStepView.swift
-      - FitnessTracker/Features/Onboarding/Steps/SummaryStepView.swift
-      ID: task-ios-fitness-tracker-app-feat-onboarding-3
-      Title: 'Build onboarding step views: Welcome, Biometrics, ActivityGoal, Summary'
-    - AcceptanceCriteria:
-      - Step transitions play a directional slide animation (forward/back) with no
-        visual glitching
-      - Progress indicator accurately reflects current step out of total steps
-      - Completing the final step dismisses the onboarding flow and the dashboard
-        is visible
-      - UI test verifies the full flow from WelcomeStep to dashboard without crashing
-      AgentType: frontend-engineer
-      Dependencies:
-      - task-ios-fitness-tracker-app-feat-onboarding-3
-      Description: Implement OnboardingView as the root container that renders the
-        current step view from the ViewModel, animates step transitions using a horizontal
-        slide or matched geometry effect, shows a progress indicator, and on ViewModel
-        completion navigates to the dashboard via the app's NavigationPath or a presented
-        sheet replacement.
-      EstimatedEffort: M
-      Files:
-      - FitnessTracker/Features/Onboarding/OnboardingView.swift
-      ID: task-ios-fitness-tracker-app-feat-onboarding-4
-      Title: Implement OnboardingView container with animated step transitions and
-        dashboard routing
-  - FeatureID: ios-fitness-tracker-app-feat-healthkit
-    FeatureTitle: HealthKit Integration
-    Tasks:
-    - AcceptanceCriteria:
-      - HealthKitService.shared requests exactly the three required HKQuantityTypes
-        on first foreground and never re-prompts after authorization
-      - readDailyStats() returns stepCount, activeEnergyBurned, and heartRate values
-        for today via HKStatisticsCollectionQuery
-      - saveWorkout(duration:) writes a HKWorkout with .traditionalStrengthTraining
-        and correct duration to HealthKit
-      - DashboardViewModel can call HealthKitService.shared.readDailyStats() in sceneDidBecomeActive
-        and receive updated stats
-      AgentType: backend-engineer
-      Dependencies: []
-      Description: Create HealthKitService.swift as a singleton wrapping HKHealthStore.
-        Implement permission request for stepCount, activeEnergyBurned, and heartRate
-        on first foreground. Add HKStatisticsCollectionQuery to read daily stats and
-        expose them, plus write HKWorkout with HKWorkoutActivityType.traditionalStrengthTraining
-        on session completion.
-      EstimatedEffort: M
-      Files:
-      - FitnessTracker/Services/HealthKitService.swift
-      ID: task-ios-fitness-tracker-app-feat-healthkit-1
-      Title: Implement HealthKitService singleton with permissions, read, and write
-  Sprint: 2
+      - FitnessTracker/Features/Workout/ExerciseLibraryView.swift
+      - FitnessTracker/Features/Workout/ExerciseDetailView.swift
+      ID: task-ios-fitness-tracker-app-feat-workout-plan-5
+      Title: Build ExerciseLibraryView and ExerciseDetailView with filtering
+  Sprint: 4
