@@ -33,12 +33,16 @@ final class ExerciseLibraryService {
 
     // MARK: - Stored properties
 
-    private let modelContainer: ModelContainer
+    private let modelContainer: ModelContainer?
     private var cache: [Exercise] = []
 
     // MARK: - Initialisation
 
-    init(modelContainer: ModelContainer) {
+    /// Creates an `ExerciseLibraryService` with an optional `ModelContainer`.
+    ///
+    /// - Parameter modelContainer: The SwiftData container for persisting exercises.
+    ///   When `nil` (e.g. in unit tests), seeding is skipped and queries return empty results.
+    init(modelContainer: ModelContainer? = nil) {
         self.modelContainer = modelContainer
     }
 
@@ -47,18 +51,26 @@ final class ExerciseLibraryService {
     /// Seeds exercises from the bundled JSON on first launch.
     ///
     /// Guards against duplicate records by checking `UserDefaults` before inserting.
-    /// Must be called once from `FitnessTrackerApp` inside a `.task` modifier.
-    func seedIfNeeded() async throws {
+    /// Subsequent calls are a no-op (guarded by a `UserDefaults` flag).
+    /// Seeding errors are logged but not propagated so callers don't need try/catch.
+    func seedIfNeeded() async {
+        guard let modelContainer else { return }
+
         guard !UserDefaults.standard.bool(forKey: Keys.seededFlag) else {
             await loadCache()
             return
         }
 
-        let dtos = try loadExercisesFromBundle()
-        try await insertExercises(dtos)
-
-        UserDefaults.standard.set(true, forKey: Keys.seededFlag)
-        await loadCache()
+        do {
+            let dtos = try loadExercisesFromBundle()
+            try await insertExercises(dtos, into: modelContainer)
+            UserDefaults.standard.set(true, forKey: Keys.seededFlag)
+            await loadCache()
+        } catch {
+            // Seeding failure is non-fatal; the library may already be populated
+            // from a previous launch or will retry on the next cold start.
+            print("[ExerciseLibraryService] Seeding failed: \(error.localizedDescription)")
+        }
     }
 
     // MARK: - Queries
@@ -107,10 +119,10 @@ final class ExerciseLibraryService {
         return try decoder.decode([ExerciseDTO].self, from: data)
     }
 
-    /// Inserts `ExerciseDTO` records as `Exercise` SwiftData models in a background context.
+    /// Inserts `ExerciseDTO` records as `Exercise` SwiftData models on the main context.
     @MainActor
-    private func insertExercises(_ dtos: [ExerciseDTO]) throws {
-        let context = modelContainer.mainContext
+    private func insertExercises(_ dtos: [ExerciseDTO], into container: ModelContainer) throws {
+        let context = container.mainContext
         for dto in dtos {
             let exercise = Exercise(
                 exerciseID: dto.id,
@@ -128,6 +140,7 @@ final class ExerciseLibraryService {
     /// Fetches all `Exercise` records from SwiftData into the in-memory cache.
     @MainActor
     private func loadCache() {
+        guard let modelContainer else { return }
         let descriptor = FetchDescriptor<Exercise>(
             sortBy: [SortDescriptor(\.name, order: .forward)]
         )

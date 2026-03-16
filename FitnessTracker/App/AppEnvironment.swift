@@ -1,66 +1,143 @@
 import Foundation
+import Observation
 import SwiftData
 
 // MARK: - AppEnvironment
 
-/// A centralised, `@Observable` dependency-injection container that holds all
-/// service singletons for the app.
+/// Central dependency-injection container for the Fitness Tracker app.
 ///
-/// Inject this at the root SwiftUI entry point via `.environment(appEnvironment)`
-/// and access it in child views or ViewModels with `@Environment(AppEnvironment.self)`.
+/// `AppEnvironment` is an `@Observable` class that holds typed references to every
+/// service singleton and repository. It is created once at the app entry point and
+/// injected into the SwiftUI environment so any view can access shared dependencies
+/// without prop-drilling or global singletons.
+///
+/// Usage in views:
+/// ```swift
+/// @Environment(AppEnvironment.self) private var env
+/// ```
 ///
 /// Dependency graph (no circular references):
 /// ```
-/// ModelContainer
-///   └─ ExerciseLibraryService
-///   └─ (Repositories — injected per feature module)
-/// KeychainService  (stateless, no SwiftData dependency)
+/// FitnessTrackerApp
+///   └─ AppEnvironment
+///        ├─ ModelContainer          (SwiftData, shared by all repositories)
+///        ├─ UserProfileRepository   (protocol → SwiftDataUserProfileRepository)
+///        ├─ NutritionRepository     (protocol → SwiftDataNutritionRepository)
+///        ├─ WorkoutRepository       (protocol → SwiftDataWorkoutRepository)
+///        ├─ ProgressRepository      (protocol → SwiftDataProgressRepository)
+///        ├─ ExerciseLibraryService  (in-memory JSON cache)
+///        ├─ KeychainService         (Security framework wrapper)
+///        └─ HealthKitService        (HKHealthStore wrapper)
 /// ```
 @Observable
 final class AppEnvironment {
 
-    // MARK: - Persistence
+    // MARK: - SwiftData
 
-    /// The shared SwiftData `ModelContainer` configured with `AppSchemaV1`.
-    ///
-    /// All repositories and services that need persistence must use this container.
+    /// The shared `ModelContainer` configured with CloudKit private DB support.
+    /// Injected into the scene via `.modelContainer(env.modelContainer)` so
+    /// SwiftUI `@Query` macros work in any view.
     let modelContainer: ModelContainer
+
+    // MARK: - Repositories
+
+    /// Provides CRUD access to the single `UserProfile` record.
+    let userProfileRepository: any UserProfileRepository
+
+    /// Provides access to `FoodItem`, `MealLog`, and `MealEntry` records.
+    let nutritionRepository: any NutritionRepository
+
+    /// Provides access to `WorkoutPlan`, `WorkoutDay`, and `WorkoutSession` records.
+    let workoutRepository: any WorkoutRepository
+
+    /// Provides access to `BodyMetric` and `Streak` records for progress analytics.
+    let progressRepository: any ProgressRepository
 
     // MARK: - Services
 
-    /// Loads and caches the bundled exercise library, seeding SwiftData on first launch.
-    let exerciseLibrary: ExerciseLibraryService
+    /// Loads and caches the bundled `exercises.json`; seeds SwiftData on first launch.
+    let exerciseLibraryService: ExerciseLibraryService
 
-    /// Wraps the iOS Keychain for secure storage of API keys and user tokens.
-    let keychain: KeychainService
+    /// Wraps the iOS Keychain for secure storage of the Claude API key.
+    let keychainService: KeychainService
 
-    // MARK: - Initialisation
+    /// Wraps `HKHealthStore` for HealthKit reads and workout writes.
+    let healthKitService: HealthKitService
 
-    /// Designated initialiser — creates the `ModelContainer` and wires all services.
+    // MARK: - Init
+
+    /// Memberwise initialiser used for production setup and for injecting test doubles.
     ///
-    /// - Parameter inMemory: When `true` the SwiftData store is kept in RAM only.
-    ///   Use this for Xcode Previews and unit tests.
-    init(inMemory: Bool = false) {
-        let container = AppEnvironment.makeModelContainer(inMemory: inMemory)
-        self.modelContainer = container
-        self.exerciseLibrary = ExerciseLibraryService(modelContainer: container)
-        self.keychain = KeychainService()
+    /// - Parameters:
+    ///   - modelContainer: The configured `ModelContainer` instance.
+    ///   - userProfileRepository: Repository conforming to `UserProfileRepository`.
+    ///   - nutritionRepository: Repository conforming to `NutritionRepository`.
+    ///   - workoutRepository: Repository conforming to `WorkoutRepository`.
+    ///   - progressRepository: Repository conforming to `ProgressRepository`.
+    ///   - exerciseLibraryService: Service for exercise JSON management.
+    ///   - keychainService: Service for Keychain access.
+    ///   - healthKitService: Service for HealthKit access.
+    init(
+        modelContainer: ModelContainer,
+        userProfileRepository: any UserProfileRepository,
+        nutritionRepository: any NutritionRepository,
+        workoutRepository: any WorkoutRepository,
+        progressRepository: any ProgressRepository,
+        exerciseLibraryService: ExerciseLibraryService = ExerciseLibraryService(),
+        keychainService: KeychainService = KeychainService(),
+        healthKitService: HealthKitService = HealthKitService()
+    ) {
+        self.modelContainer = modelContainer
+        self.userProfileRepository = userProfileRepository
+        self.nutritionRepository = nutritionRepository
+        self.workoutRepository = workoutRepository
+        self.progressRepository = progressRepository
+        self.exerciseLibraryService = exerciseLibraryService
+        self.keychainService = keychainService
+        self.healthKitService = healthKitService
+    }
+}
+
+// MARK: - Production Factory
+
+extension AppEnvironment {
+
+    /// Builds the production `AppEnvironment` wiring the real SwiftData-backed
+    /// repositories to the shared `ModelContainer`.
+    ///
+    /// The `ModelContainer` schema and CloudKit configuration will be expanded
+    /// once all `@Model` types are defined.
+    static func makeProductionEnvironment() -> AppEnvironment {
+        let container = makeModelContainer()
+        let context = container.mainContext
+        return AppEnvironment(
+            modelContainer: container,
+            userProfileRepository: SwiftDataUserProfileRepository(context: context),
+            nutritionRepository: SwiftDataNutritionRepository(context: context),
+            workoutRepository: SwiftDataWorkoutRepository(context: context),
+            progressRepository: SwiftDataProgressRepository(context: context),
+            exerciseLibraryService: ExerciseLibraryService(modelContainer: container)
+        )
     }
 
-    // MARK: - Private factory
-
-    private static func makeModelContainer(inMemory: Bool) -> ModelContainer {
-        let schema = Schema(AppSchema.models)
-        let configuration = ModelConfiguration(
-            schema: schema,
-            isStoredInMemoryOnly: inMemory,
-            cloudKitDatabase: inMemory ? .none : .automatic
-        )
+    /// Creates the `ModelContainer` for the app schema.
+    ///
+    /// The schema list is intentionally empty here and will be populated with
+    /// the versioned `AppSchemaV1` types added in subsequent tasks.
+    static func makeModelContainer() -> ModelContainer {
         do {
+            // Schema types registered here once @Model classes are defined.
+            let schema = Schema([])
+            let configuration = ModelConfiguration(
+                schema: schema,
+                isStoredInMemoryOnly: false,
+                cloudKitDatabase: .private("iCloud.com.fitnessTracker.app")
+            )
             return try ModelContainer(for: schema, configurations: [configuration])
         } catch {
-            // A failed ModelContainer is unrecoverable; crash with a clear message.
-            fatalError("AppEnvironment: failed to create ModelContainer — \(error.localizedDescription)")
+            // A fatal error here means the data store is misconfigured —
+            // surface this immediately rather than silently corrupting state.
+            fatalError("Failed to create ModelContainer: \(error)")
         }
     }
 }

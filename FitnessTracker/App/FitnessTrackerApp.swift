@@ -1,59 +1,44 @@
 import SwiftUI
-import SwiftData
 
+// MARK: - App Entry Point
+
+/// Root entry point for the Fitness Tracker application.
+///
+/// `FitnessTrackerApp` creates the single `AppEnvironment` instance and
+/// injects it into the SwiftUI environment so every view in the hierarchy
+/// can access shared services and repositories via:
+/// ```swift
+/// @Environment(AppEnvironment.self) private var env
+/// ```
+///
+/// The `ModelContainer` from the environment is also attached to the window
+/// group scene so `@Query` macros work out of the box in any view.
 @main
 struct FitnessTrackerApp: App {
 
-    // MARK: - DI container
+    // MARK: - Dependencies
 
-    /// The root dependency-injection container, injected into the entire view hierarchy.
-    @State private var appEnvironment = AppEnvironment()
+    /// The single, app-wide dependency container. Created once and never
+    /// replaced so all views share the same service and repository instances.
+    @State private var appEnvironment: AppEnvironment
 
-    // MARK: - App entry point
+    // MARK: - Init
+
+    init() {
+        let environment = AppEnvironment.makeProductionEnvironment()
+        _appEnvironment = State(initialValue: environment)
+    }
+
+    // MARK: - Scene
 
     var body: some Scene {
         WindowGroup {
             RootView()
+                // Inject environment so any descendant view can resolve services.
                 .environment(appEnvironment)
-                .modelContainer(appEnvironment.modelContainer)
-                .task {
-                    await performFirstLaunchSetup()
-                }
         }
-    }
-
-    // MARK: - First-launch setup
-
-    /// Runs once per lifecycle; seeds the exercise library on first install.
-    ///
-    /// Subsequent launches are no-ops because `ExerciseLibraryService` guards
-    /// against re-seeding with a `UserDefaults` flag.
-    @MainActor
-    private func performFirstLaunchSetup() async {
-        do {
-            try await appEnvironment.exerciseLibrary.seedIfNeeded()
-        } catch {
-            // Seeding failure is non-fatal; the library may already be populated
-            // from a previous launch or will retry on the next cold start.
-            print("[FitnessTrackerApp] Exercise library seeding failed: \(error.localizedDescription)")
-        }
-    }
-}
-
-// MARK: - RootView
-
-/// Decides whether to show the onboarding flow or the main dashboard based on
-/// whether a `UserProfile` exists in SwiftData.
-struct RootView: View {
-
-    @Environment(AppEnvironment.self) private var appEnvironment
-    @Query private var userProfiles: [UserProfile]
-
-    var body: some View {
-        if userProfiles.isEmpty {
-            OnboardingView()
-        } else {
-            MainTabView()
-        }
+        // Attach the shared ModelContainer to the scene so @Query macros work
+        // in all views without extra configuration.
+        .modelContainer(appEnvironment.modelContainer)
     }
 }
