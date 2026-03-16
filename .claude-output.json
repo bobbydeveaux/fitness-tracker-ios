@@ -1,0 +1,17 @@
+{
+  "prTitle": "feat: implement NotificationScheduler with UNUserNotificationCenter",
+  "prBody": "## Summary\n\n- Adds `NotificationScheduler` — an `@Observable` singleton wrapping `UNUserNotificationCenter` for scheduling recurring workout reminders\n- Introduces `NotificationSchedulerProtocol` for testability (mirrors the `HealthKitServiceProtocol` pattern) and `NotificationCenterProtocol` to allow mock injection in unit tests\n- Wires `NotificationScheduler.shared` into `AppEnvironment` alongside the other service singletons\n- Ships 25 unit tests in `NotificationSchedulerTests.swift` covering all four acceptance criteria\n\n## Acceptance criteria\n\n| Criterion | Status |\n|---|---|\n| `requestPermission()` returns auth status and updates a published property | ✅ Implemented |\n| `scheduleReminders(days:time:)` creates one `UNNotificationRequest` per weekday with correct calendar trigger | ✅ Implemented |\n| Calling `scheduleReminders` again removes previously scheduled fitness-reminder notifications before re-adding | ✅ Implemented |\n| `cancelAll()` removes all pending fitness-reminder notifications | ✅ Implemented |\n\n## Files changed\n\n- `FitnessTracker/Services/NotificationScheduler.swift` — new service\n- `FitnessTracker/App/AppEnvironment.swift` — wires in `notificationScheduler`\n- `FitnessTrackerTests/NotificationSchedulerTests.swift` — new test file\n- `FitnessTrackerTests/AppEnvironmentTests.swift` — verifies new service is accessible\n\nCloses #27",
+  "testsPass": true,
+  "filesChanged": [
+    "FitnessTracker/Services/NotificationScheduler.swift",
+    "FitnessTracker/App/AppEnvironment.swift",
+    "FitnessTrackerTests/NotificationSchedulerTests.swift",
+    "FitnessTrackerTests/AppEnvironmentTests.swift"
+  ],
+  "docsUpdated": [],
+  "docsReviewed": [
+    "docs/concepts/ios-fitness-tracker-app/LLD.md",
+    "docs/concepts/ios-fitness-tracker-app/HLD.md",
+    "docs/swiftdata-models.md"
+  ]
+}
