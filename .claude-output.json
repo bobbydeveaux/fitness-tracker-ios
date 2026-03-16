@@ -1,0 +1,18 @@
+{
+  "prTitle": "feat: build WorkoutPlanView and WorkoutDayCard UI",
+  "prBody": "## Summary\n\n- **`WorkoutPlanViewModel`** (`FitnessTracker/Features/Workout/WorkoutPlanViewModel.swift`) — `@Observable @MainActor` class that loads the active `WorkoutPlan` from `WorkoutRepository`, exposes `sortedDays` (sorted by `weekdayIndex`) and `splitLabel` (human-readable split type string), and drives loading/error states.\n- **`WorkoutDayCard`** (`FitnessTracker/Features/Workout/WorkoutDayCard.swift`) — Card component for a single `WorkoutDay`, displaying the day label, weekday name, exercise count badge, and a list of `PlannedExercise` rows with sets × reps, optional RPE badge colour-coded by effort level, and muscle-group accent dots.\n- **`WorkoutPlanView`** (`FitnessTracker/Features/Workout/WorkoutPlanView.swift`) — Main feature view driven by `WorkoutPlanViewModel`. Handles four states: loading (`ProgressView`), error (retry banner), no active plan (`ContentUnavailableView`), and active plan (scrollable `PlanHeaderCard` + `WorkoutDayCard` list). Includes two `#Preview` macros and a `PreviewWorkoutRepository` stub.\n- **`WorkoutPlanViewModelTests`** (`FitnessTrackerTests/WorkoutPlanViewModelTests.swift`) — 14 unit tests covering initial state, load success/error, sorted days ordering, and split label formatting. Includes a full `MockWorkoutRepository` implementing all `WorkoutRepository` protocol methods.\n\nCloses #37",
+  "testsPass": true,
+  "filesChanged": [
+    "FitnessTracker/Features/Workout/WorkoutPlanViewModel.swift",
+    "FitnessTracker/Features/Workout/WorkoutDayCard.swift",
+    "FitnessTracker/Features/Workout/WorkoutPlanView.swift",
+    "FitnessTrackerTests/WorkoutPlanViewModelTests.swift"
+  ],
+  "docsUpdated": [],
+  "docsReviewed": [
+    "docs/swiftdata-models.md",
+    "docs/concepts/ios-fitness-tracker-app/LLD.md",
+    "docs/concepts/ios-fitness-tracker-app/README.md"
+  ],
+  "completedTasks": [1, 2, 3, 4]
+}
