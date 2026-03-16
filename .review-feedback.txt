@@ -1,62 +1,49 @@
 ## Code Review - Changes Requested
 
-The review is complete. This PR has a **blocking issue**: the entire feature implementation is missing. The PR only deletes a leftover metadata file from a prior task, while `OnboardingViewModel.swift` and all related code were never created.
-
----
-
 ## ❌ BLOCKING ISSUES FOUND
 
-**PR #16 — WIP: Implement HealthKitService singleton with permissions, read, and write**
+### PR #44 — Implement NotificationScheduler with UNUserNotificationCenter
 
 ---
 
 ### Summary
 
-This PR is in **DRAFT** state and contains **zero new code**. The only change is the deletion of `.claude-output.json` (a metadata file from a previous task). The `HealthKitService.swift` file remains an empty stub — no HealthKit implementation has been delivered.
+This PR is a **WIP draft** with **zero implementation**. The only diff in the branch is the deletion of `.claude-output.json` (a build artifact from a prior PR). The required file `FitnessTracker/Services/NotificationScheduler.swift` **does not exist** anywhere in the codebase.
 
 ---
 
-### BLOCKING: Core Functionality Not Implemented
+### Blocking Issues
 
-**File:** `FitnessTracker/Services/HealthKitService.swift`
+**[BLOCKING] Implementation is entirely missing**
 
-The service is entirely a stub. Every acceptance criterion from issue #10 is unmet:
+The PR's stated goal is to implement `NotificationScheduler` per issue #27, but none of the required code has been written. All four acceptance criteria are unmet:
 
 | Acceptance Criterion | Status |
 |---|---|
-| `requestAuthorisationIfNeeded()` requests the 3 HKQuantityTypes | ❌ Empty body |
-| `readDailyStats()` returns real data via `HKStatisticsCollectionQuery` | ❌ Returns zeroed `DailyStats()` |
-| `saveWorkout(duration:)` writes an `HKWorkout` with `.traditionalStrengthTraining` | ❌ Empty body |
-| `DashboardViewModel` integration with `readDailyStats()` | ❌ `DashboardViewModel` does not exist |
+| `requestPermission()` returns auth status and updates a published property | ❌ Not implemented |
+| `scheduleReminders(days:time:)` creates one `UNNotificationRequest` per weekday with correct calendar trigger | ❌ Not implemented |
+| Calling `scheduleReminders` again removes previously scheduled fitness-reminder notifications before re-adding | ❌ Not implemented |
+| `cancelAll()` removes all pending fitness-reminder notifications | ❌ Not implemented |
 
-Specific missing implementation details:
-- No `import HealthKit` — the framework is never imported
-- No `HKHealthStore` instance created or referenced
-- `requestAuthorisationIfNeeded()` has an empty body; no permission request occurs
-- `readDailyStats()` always returns `DailyStats()` with all zeroes — no queries executed
-- `saveWorkout(duration:)` has an empty body; nothing is written to HealthKit
-- The `init()` is `internal` (not `private`), breaking the singleton contract — external code can bypass `.shared` and create additional instances
-- No `DashboardViewModel` exists to satisfy the fourth acceptance criterion
+The file specified in tasks.yaml (`FitnessTracker/Services/NotificationScheduler.swift`) does not exist. The only change in this branch is removal of `.claude-output.json`, which appears to be leftover from a previous sprint's work.
 
 ---
 
-### Additional Issues (Non-Blocking)
+### What Needs to Be Done
 
-**No tests for HealthKitService**
-There is no `HealthKitServiceTests.swift`. Given HealthKit requires a real device/entitlement for most operations, at minimum a mock/protocol abstraction should be present so the service can be tested with a test double.
+1. Create `FitnessTracker/Services/NotificationScheduler.swift` with:
+   - A protocol (e.g. `NotificationSchedulerProtocol`) for testability, following the pattern used by `HealthKitService`
+   - `requestPermission()` async method that calls `UNUserNotificationCenter.current().requestAuthorization(options:)` and publishes the resulting `UNAuthorizationStatus`
+   - `scheduleReminders(days:time:)` that removes existing `fitness-reminder-*` pending requests, then adds one `UNNotificationRequest` per selected weekday using `UNCalendarNotificationTrigger`
+   - `cancelAll()` that removes all pending `fitness-reminder-*` notifications
 
-**`docsUpdated` is empty in the deleted `.claude-output.json`**
-While that file was from a prior task, this PR also doesn't update any documentation. If the LLD/HLD describe the HealthKit integration design, they should be confirmed accurate once implementation lands.
+2. Unit tests covering the scheduler logic (using a mock `UNUserNotificationCenter` or similar test double)
+
+3. Update `.claude-output.json` with the correct metadata for this task
 
 ---
 
-### What Needs to Happen Before Merge
-
-1. Implement `HealthKitService.swift` with `import HealthKit`, an `HKHealthStore` property, and real logic in all three methods
-2. Make `init()` private so the singleton cannot be bypassed
-3. Create `DashboardViewModel` (or extend it if it exists elsewhere) to call `readDailyStats()` on scene foreground
-4. Add `HealthKitServiceTests.swift` with protocol-based mocking so the service logic is testable without a live device
-5. Move the PR out of DRAFT once the above is complete
+This PR cannot be merged in its current state as it contains no feature implementation.
 
 **Action Required**: Please address the blocking issues above before merging.
 
