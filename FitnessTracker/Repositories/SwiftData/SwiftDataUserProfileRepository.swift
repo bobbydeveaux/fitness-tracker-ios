@@ -1,19 +1,27 @@
 import Foundation
 import SwiftData
 
-// MARK: - Stub (fully implemented in task-ios-fitness-tracker-app-feat-foundation-3)
+/// SwiftData-backed implementation of UserProfileRepository.
+/// Uses @ModelActor to ensure all SwiftData operations run on a background serial executor,
+/// keeping the ModelContext off the main thread.
+@ModelActor
+public actor SwiftDataUserProfileRepository: UserProfileRepository {
 
-/// SwiftData-backed implementation of `UserProfileRepository`.
-/// This stub satisfies the protocol so `AppEnvironment` compiles; the real
-/// implementation with `@ModelActor` context access is added in the next task.
-final class SwiftDataUserProfileRepository: UserProfileRepository {
-    private let context: ModelContext
-
-    init(context: ModelContext) {
-        self.context = context
+    public func fetch() async throws -> UserProfile? {
+        let descriptor = FetchDescriptor<UserProfile>()
+        let results = try modelContext.fetch(descriptor)
+        return results.first
     }
 
-    func fetchProfile() async throws -> UserProfile? { nil }
-    func save(_ profile: UserProfile) async throws {}
-    func deleteProfile() async throws {}
+    public func save(_ profile: UserProfile) async throws {
+        if profile.modelContext == nil {
+            modelContext.insert(profile)
+        }
+        try modelContext.save()
+    }
+
+    public func delete(_ profile: UserProfile) async throws {
+        modelContext.delete(profile)
+        try modelContext.save()
+    }
 }
