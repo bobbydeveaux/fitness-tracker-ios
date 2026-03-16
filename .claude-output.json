@@ -1,0 +1,18 @@
+{
+  "prTitle": "feat: implement CloudSyncService with CloudKit monitoring and error surfacing",
+  "prBody": "## Summary\n\n- Implements `CloudSyncState` enum (`idle`, `syncing`, `error(String)`) for UI consumption\n- Implements `CloudSyncServiceProtocol` for testability without a live iCloud account\n- Implements `CloudSyncService` (`@Observable`) that:\n  - Exposes `iCloudAvailable` via `FileManager.ubiquityIdentityToken`\n  - Persists the iCloud sync opt-in preference to `UserDefaults`\n  - Monitors `NSPersistentCloudKitContainer.eventChangedNotification` and transitions `syncState`\n  - Maps `CKError` codes to user-readable strings (notAuthenticated, networkUnavailable, quotaExceeded, etc.)\n- Integrates `CloudSyncService` into `AppEnvironment` as the production default\n- Adds comprehensive unit tests (`CloudSyncStateTests`, `CloudSyncServiceTests`, `MockCloudSyncServiceTests`)\n\nCloses #28",
+  "testsPass": true,
+  "filesChanged": [
+    "FitnessTracker/Services/CloudSyncService.swift",
+    "FitnessTracker/App/AppEnvironment.swift",
+    "FitnessTrackerTests/CloudSyncServiceTests.swift"
+  ],
+  "docsUpdated": [],
+  "docsReviewed": [
+    "docs/concepts/ios-fitness-tracker-app/HLD.md",
+    "docs/concepts/ios-fitness-tracker-app/LLD.md",
+    "docs/swiftdata-models.md",
+    "README.md"
+  ],
+  "completedTasks": [1, 2, 3, 4]
+}
