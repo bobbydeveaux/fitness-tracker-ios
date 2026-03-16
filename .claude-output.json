@@ -10,7 +10,8 @@
   "docsUpdated": [],
   "docsReviewed": [
     "docs/swiftdata-models.md",
-    "docs/concepts/ios-fitness-tracker-app/LLD.md"
+    "docs/concepts/ios-fitness-tracker-app/LLD.md",
+    "docs/concepts/ios-fitness-tracker-app/README.md"
   ],
   "completedTasks": [1, 2, 3, 4]
 }
