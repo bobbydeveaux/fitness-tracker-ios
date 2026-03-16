@@ -1,5 +1,9 @@
 ## Code Review - Changes Requested
 
+The review is complete. This PR has a **blocking issue**: the entire feature implementation is missing. The PR only deletes a leftover metadata file from a prior task, while `OnboardingViewModel.swift` and all related code were never created.
+
+---
+
 ## ❌ BLOCKING ISSUES FOUND
 
 **PR #16 — WIP: Implement HealthKitService singleton with permissions, read, and write**
