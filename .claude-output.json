@@ -1,19 +1,22 @@
 {
-  "prTitle": "feat(dashboard): add WeeklySummaryCard and quick-add buttons",
-  "prBody": "## Summary\n\n- **New `WeeklySummaryCard` component** (`FitnessTracker/Features/Dashboard/WeeklySummaryCard.swift`) — a 2×2 stat grid card showing:\n  - Completed workout sessions in the trailing 7 days\n  - Average daily caloric intake over the past 7 days\n  - Today's step count (from HealthKit)\n  - Today's active energy burned (from HealthKit)\n- **Expanded `DashboardViewModel`** — now accepts `nutritionRepository` and `workoutRepository` dependencies and exposes a `WeeklyStats` model. `loadAll()` fetches HealthKit stats and weekly aggregates concurrently.\n- **Updated `DashboardView`** with `WeeklySummaryCard` and a `QuickAddStrip` providing one-tap access to Log Meal (sheet) and Log Workout (navigation).\n\nCloses #33",
+  "prTitle": "feat: implement DashboardViewModel with DashboardState aggregation",
+  "prBody": "## Summary\n\n- Add `DashboardState` struct that aggregates HealthKit daily statistics, today's consumed macro totals (kcal/protein/carbs/fat), and activity streak counts into a single observable value type\n- Update `DashboardViewModel` to `@MainActor` with injectable `nutritionRepository` and `progressRepository` dependencies alongside the existing `healthKitService`\n- Add `loadDashboard(for:)` method that loads all three data sources sequentially and populates the full `DashboardState`\n- Keep `loadDailyStats()` as a lightweight HealthKit-only refresh for foreground updates\n- Expose `dailyStats` and `isLoadingStats` as computed convenience accessors for backward compatibility with existing tests\n- Mark existing `DashboardViewModelTests` as `@MainActor` to match the `@MainActor`-isolated view model\n- Add `DashboardViewModelTests.swift` with `MockProgressRepository`, `MockHealthKitServiceForDashboard`, and 30+ test cases covering full aggregation, partial failures, error propagation, and edge cases\n\nCloses #31",
   "testsPass": true,
   "filesChanged": [
-    "FitnessTracker/Features/Dashboard/WeeklySummaryCard.swift",
     "FitnessTracker/Features/Dashboard/DashboardViewModel.swift",
     "FitnessTracker/Features/Dashboard/DashboardView.swift",
+    "FitnessTracker/Features/Dashboard/WeeklySummaryCard.swift",
     "FitnessTracker/Features/Workout/ExerciseLibraryView.swift",
     "FitnessTracker/Features/Workout/ExerciseDetailView.swift",
-    "FitnessTrackerTests/ExerciseLibraryViewTests.swift"
+    "FitnessTrackerTests/DashboardViewModelTests.swift",
+    "FitnessTrackerTests/ExerciseLibraryViewTests.swift",
+    "FitnessTrackerTests/HealthKitServiceTests.swift"
   ],
   "docsUpdated": [],
   "docsReviewed": [
-    "docs/swiftdata-models.md",
     "docs/concepts/ios-fitness-tracker-app/LLD.md",
+    "docs/concepts/ios-fitness-tracker-app/HLD.md",
+    "docs/swiftdata-models.md",
     "README.md"
   ],
   "completedTasks": [1, 2, 3, 4]
