@@ -1,186 +1,69 @@
 import Foundation
 import Observation
 
-// MARK: - ProgressTimeRange
+// MARK: - TimeRange
 
-/// Selectable time window for progress analytics charts.
-enum ProgressTimeRange: String, CaseIterable, Identifiable, Sendable {
-    case week       = "1W"
-    case month      = "1M"
+/// Time range options for progress chart filtering.
+enum TimeRange: String, CaseIterable, Identifiable {
+    case oneWeek    = "1W"
+    case oneMonth   = "1M"
     case threeMonths = "3M"
-    case all        = "All"
+    case allTime    = "All"
 
     var id: String { rawValue }
 
-    /// Returns the start date for this range relative to `now`, or `nil` for `.all`.
-    func startDate(relativeTo now: Date = .now) -> Date? {
+    /// Human-readable label shown in the picker.
+    var displayTitle: String { rawValue }
+
+    /// The start `Date` for this range, or `nil` for all-time.
+    var startDate: Date? {
         let calendar = Calendar.current
+        let now = Date()
         switch self {
-        case .week:
-            return calendar.date(byAdding: .weekOfYear, value: -1, to: now)
-        case .month:
-            return calendar.date(byAdding: .month, value: -1, to: now)
-        case .threeMonths:
-            return calendar.date(byAdding: .month, value: -3, to: now)
-        case .all:
-            return nil
+        case .oneWeek:      return calendar.date(byAdding: .weekOfYear, value: -1, to: now)
+        case .oneMonth:     return calendar.date(byAdding: .month, value: -1, to: now)
+        case .threeMonths:  return calendar.date(byAdding: .month, value: -3, to: now)
+        case .allTime:      return nil
         }
     }
 }
 
-// MARK: - ProgressDataPoint
+// MARK: - WeightDataPoint
 
-/// A single (date, value) pair used as a chart data point.
-struct ProgressDataPoint: Identifiable, Sendable {
+/// A single bodyweight entry for use in a chart.
+struct WeightDataPoint: Identifiable {
     let id: UUID
     let date: Date
-    let value: Double
-
-    init(date: Date, value: Double) {
-        self.id = UUID()
-        self.date = date
-        self.value = value
-    }
+    let weightKg: Double
 }
 
-// MARK: - ExerciseProgressSeries
+// MARK: - StrengthDataPoint
 
-/// 1RM trend for a single exercise, ready for Swift Charts consumption.
-struct ExerciseProgressSeries: Identifiable, Sendable {
-    /// Stable identifier: the `Exercise.exerciseID` string.
-    let id: String
+/// A single estimated 1RM data point for a specific exercise, for use in a chart.
+struct StrengthDataPoint: Identifiable {
+    let id: UUID
+    let date: Date
+    /// Epley-formula estimated 1RM in kg.
+    let estimatedOneRMKg: Double
     let exerciseName: String
-    var dataPoints: [ProgressDataPoint]
 }
 
-// MARK: - ProgressState
+// MARK: - ExerciseInfo
 
-/// Aggregated analytics state produced by `ProgressViewModel`.
-struct ProgressState: Sendable {
-    /// Bodyweight trend data points, ordered by date ascending.
-    var bodyWeightPoints: [ProgressDataPoint] = []
-    /// Total volume (kg) per completed workout session, ordered by date ascending.
-    var volumePoints: [ProgressDataPoint] = []
-    /// Per-exercise estimated 1RM trend series, ordered by exercise name.
-    var exerciseSeries: [ExerciseProgressSeries] = []
-}
-
-// MARK: - ProgressAggregator
-
-/// Background actor that performs CPU-bound aggregation over lightweight snapshots,
-/// keeping the main thread free during computation.
-private actor ProgressAggregator {
-
-    // Lightweight Sendable mirrors of SwiftData @Model objects.
-
-    struct BodyMetricSnapshot: Sendable {
-        let date: Date
-        let value: Double
-        let type: BodyMetricType
-    }
-
-    struct SetSnapshot: Sendable {
-        let weightKg: Double
-        let reps: Int
-        let isComplete: Bool
-        let exerciseID: String?
-        let exerciseName: String?
-    }
-
-    struct SessionSnapshot: Sendable {
-        let startedAt: Date
-        let totalVolumeKg: Double
-        let status: SessionStatus
-        let sets: [SetSnapshot]
-    }
-
-    /// Converts fetched model objects into snapshots.
-    static func bodyMetricSnapshots(from metrics: [BodyMetric]) -> [BodyMetricSnapshot] {
-        metrics.map { BodyMetricSnapshot(date: $0.date, value: $0.value, type: $0.type) }
-    }
-
-    static func sessionSnapshots(from sessions: [WorkoutSession]) -> [SessionSnapshot] {
-        sessions.map { session in
-            let sets = session.sets.map { set in
-                SetSnapshot(
-                    weightKg: set.weightKg,
-                    reps: set.reps,
-                    isComplete: set.isComplete,
-                    exerciseID: set.exercise?.exerciseID,
-                    exerciseName: set.exercise?.name
-                )
-            }
-            return SessionSnapshot(
-                startedAt: session.startedAt,
-                totalVolumeKg: session.totalVolumeKg,
-                status: session.status,
-                sets: sets
-            )
-        }
-    }
-
-    /// Performs all aggregation off the main thread and returns a complete `ProgressState`.
-    func compute(
-        bodyMetricSnapshots: [BodyMetricSnapshot],
-        sessionSnapshots: [SessionSnapshot]
-    ) -> ProgressState {
-
-        // --- Body weight chart ---
-        let bodyWeightPoints = bodyMetricSnapshots
-            .filter { $0.type == .weight }
-            .sorted { $0.date < $1.date }
-            .map { ProgressDataPoint(date: $0.date, value: $0.value) }
-
-        // --- Volume per completed session chart ---
-        let completedSessions = sessionSnapshots.filter { $0.status == .complete }
-        let volumePoints = completedSessions
-            .sorted { $0.startedAt < $1.startedAt }
-            .map { ProgressDataPoint(date: $0.startedAt, value: $0.totalVolumeKg) }
-
-        // --- Per-exercise 1RM trend (Epley formula: 1RM = weight × (1 + reps / 30)) ---
-        // Accumulate points keyed by exerciseID.
-        var exerciseMap: [String: (name: String, points: [ProgressDataPoint])] = [:]
-        for session in completedSessions {
-            for set in session.sets where set.isComplete && set.reps > 0 {
-                guard let exerciseID = set.exerciseID,
-                      let exerciseName = set.exerciseName else { continue }
-                let oneRM = set.weightKg * (1.0 + Double(set.reps) / 30.0)
-                let point = ProgressDataPoint(date: session.startedAt, value: oneRM)
-                if var existing = exerciseMap[exerciseID] {
-                    existing.points.append(point)
-                    exerciseMap[exerciseID] = existing
-                } else {
-                    exerciseMap[exerciseID] = (name: exerciseName, points: [point])
-                }
-            }
-        }
-
-        let exerciseSeries = exerciseMap
-            .map { id, value in
-                ExerciseProgressSeries(
-                    id: id,
-                    exerciseName: value.name,
-                    dataPoints: value.points.sorted { $0.date < $1.date }
-                )
-            }
-            .sorted { $0.exerciseName < $1.exerciseName }
-
-        return ProgressState(
-            bodyWeightPoints: bodyWeightPoints,
-            volumePoints: volumePoints,
-            exerciseSeries: exerciseSeries
-        )
-    }
+/// Lightweight identifier + name for an exercise, used to populate the exercise picker.
+struct ExerciseInfo: Identifiable, Hashable {
+    let id: String   // Exercise.exerciseID
+    let name: String
 }
 
 // MARK: - ProgressViewModel
 
-/// ViewModel for the Progress analytics feature.
+/// ViewModel for the Progress feature screen.
 ///
-/// Aggregates body-weight trends, workout volume trends, and per-exercise
-/// estimated 1RM trends over a user-selected time range. Heavy computation
-/// is delegated to a `ProgressAggregator` background actor, keeping the
-/// main thread responsive.
+/// Aggregates bodyweight trend data and per-exercise Epley 1RM estimates from
+/// the `ProgressRepository` and `WorkoutRepository`. Supports filtering by
+/// `TimeRange` (1W, 1M, 3M, All). For all-time data, results are down-sampled
+/// to weekly averages to keep aggregation under 300 ms.
 ///
 /// Usage in a SwiftUI view:
 /// ```swift
@@ -190,7 +73,7 @@ private actor ProgressAggregator {
 /// )
 ///
 /// var body: some View {
-///     ProgressView()
+///     ProgressView(viewModel: viewModel)
 ///         .task { await viewModel.loadProgress(for: profile) }
 /// }
 /// ```
@@ -200,110 +83,207 @@ final class ProgressViewModel {
 
     // MARK: - State
 
-    /// Aggregated chart data for the currently selected time range.
-    private(set) var state: ProgressState = ProgressState()
+    /// The currently selected time range; changing this triggers a data reload.
+    var selectedRange: TimeRange = .oneMonth {
+        didSet {
+            guard selectedRange != oldValue else { return }
+            Task { await reload() }
+        }
+    }
 
-    /// The active time-range filter. Changing this value automatically
-    /// re-runs aggregation if a user profile has been loaded.
-    var selectedTimeRange: ProgressTimeRange = .month
+    /// Bodyweight data points for the selected time range.
+    private(set) var weightDataPoints: [WeightDataPoint] = []
 
-    /// `true` while data is being fetched or aggregated.
+    /// Per-exercise Epley 1RM data points keyed by `ExerciseInfo.id`.
+    private(set) var strengthDataPoints: [String: [StrengthDataPoint]] = [:]
+
+    /// Exercises that have at least one logged set in the selected range.
+    private(set) var availableExercises: [ExerciseInfo] = []
+
+    /// The exercise currently shown in the StrengthChartView.
+    var selectedExercise: ExerciseInfo?
+
+    /// `true` while data is being loaded.
     private(set) var isLoading: Bool = false
 
-    /// Non-nil when the last load operation produced an error.
+    /// Non-nil when an error occurred during the last async operation.
     private(set) var errorMessage: String?
+
+    // MARK: - Derived
+
+    /// Strength data points for the currently selected exercise.
+    var currentStrengthPoints: [StrengthDataPoint] {
+        guard let exercise = selectedExercise else { return [] }
+        return strengthDataPoints[exercise.id] ?? []
+    }
 
     // MARK: - Dependencies
 
     private let progressRepository: any ProgressRepository
     private let workoutRepository: any WorkoutRepository
-    private let aggregator: ProgressAggregator
+
+    /// The user profile used to scope queries; stored on first `loadProgress(for:)` call.
+    private var userProfile: UserProfile?
 
     // MARK: - Init
 
     /// Creates a `ProgressViewModel` with the required repository dependencies.
     ///
     /// - Parameters:
-    ///   - progressRepository: Repository providing `BodyMetric` access.
-    ///   - workoutRepository: Repository providing `WorkoutSession` and `LoggedSet` access.
+    ///   - progressRepository: Source of `BodyMetric` records.
+    ///   - workoutRepository: Source of `WorkoutSession` and `LoggedSet` records.
     init(
         progressRepository: any ProgressRepository,
         workoutRepository: any WorkoutRepository
     ) {
         self.progressRepository = progressRepository
         self.workoutRepository = workoutRepository
-        self.aggregator = ProgressAggregator()
     }
 
-    // MARK: - Actions
+    // MARK: - Public API
 
-    /// Fetches and aggregates progress data for `userProfile` using the current
-    /// `selectedTimeRange` filter.
+    /// Loads all progress data for `userProfile` using the current `selectedRange`.
     ///
-    /// Errors from individual data sources are captured in `errorMessage`; if
-    /// only one source fails the other's data is still applied.
-    ///
-    /// - Parameter userProfile: The profile used to scope body-metric queries.
+    /// This is the primary entry point called from the view's `.task {}` modifier.
     func loadProgress(for userProfile: UserProfile) async {
+        self.userProfile = userProfile
+        await reload()
+    }
+
+    /// Re-fetches data for the current `selectedRange` without changing the user profile.
+    ///
+    /// Called automatically when `selectedRange` changes.
+    func reload() async {
+        guard let profile = userProfile else { return }
         isLoading = true
         errorMessage = nil
         defer { isLoading = false }
 
-        let now = Date.now
-        let startDate = selectedTimeRange.startDate(relativeTo: now)
+        async let weightTask: Void = loadWeightData(for: profile)
+        async let strengthTask: Void = loadStrengthData()
 
-        // Fetch from background @ModelActor repositories concurrently.
-        async let metricsTask = fetchBodyMetrics(for: userProfile, from: startDate)
-        async let sessionsTask = fetchWorkoutSessions(from: startDate, to: now)
-
-        let (metrics, sessions) = await (metricsTask, sessionsTask)
-
-        // Build lightweight Sendable snapshots on MainActor before passing to background actor.
-        let metricSnapshots = ProgressAggregator.bodyMetricSnapshots(from: metrics)
-        let sessionSnapshots = ProgressAggregator.sessionSnapshots(from: sessions)
-
-        // Delegate CPU-bound aggregation to background actor.
-        let newState = await aggregator.compute(
-            bodyMetricSnapshots: metricSnapshots,
-            sessionSnapshots: sessionSnapshots
-        )
-
-        state = newState
+        await (weightTask, strengthTask)
     }
 
-    // MARK: - Private Helpers
+    // MARK: - Private – Weight
 
-    /// Fetches body metrics for `userProfile`, optionally filtered by `startDate`.
-    private func fetchBodyMetrics(for userProfile: UserProfile, from startDate: Date?) async -> [BodyMetric] {
+    private func loadWeightData(for profile: UserProfile) async {
         do {
-            if let start = startDate {
-                return try await progressRepository.fetchBodyMetrics(
-                    type: BodyMetricType.weight.rawValue,
-                    from: start,
-                    to: .now
-                )
-            } else {
-                return try await progressRepository
-                    .fetchBodyMetrics(for: userProfile)
-                    .filter { $0.type == .weight }
+            let allMetrics = try await progressRepository.fetchBodyMetrics(for: profile)
+            let weightMetrics = allMetrics.filter { $0.type == .weight }
+            let filtered = filter(metrics: weightMetrics, for: selectedRange)
+            let rawPoints = filtered.map { metric in
+                WeightDataPoint(id: metric.id, date: metric.date, weightKg: metric.value)
             }
+            weightDataPoints = selectedRange == .allTime
+                ? downsampleToWeeklyAverages(rawPoints)
+                : rawPoints
         } catch {
             errorMessage = error.localizedDescription
-            return []
         }
     }
 
-    /// Fetches workout sessions, optionally filtered to a start/end window.
-    private func fetchWorkoutSessions(from startDate: Date?, to endDate: Date) async -> [WorkoutSession] {
+    // MARK: - Private – Strength
+
+    private func loadStrengthData() async {
         do {
-            if let start = startDate {
-                return try await workoutRepository.fetchWorkoutSessions(from: start, to: endDate)
+            let sessions: [WorkoutSession]
+            if let start = selectedRange.startDate {
+                sessions = try await workoutRepository.fetchWorkoutSessions(from: start, to: Date())
             } else {
-                return try await workoutRepository.fetchWorkoutSessions()
+                sessions = try await workoutRepository.fetchWorkoutSessions()
+            }
+
+            // Group logged sets by exercise and compute daily best Epley 1RM.
+            var pointsByExercise: [String: [StrengthDataPoint]] = [:]
+            var exerciseNames: [String: String] = [:]
+
+            for session in sessions {
+                let sessionDay = Calendar.current.startOfDay(for: session.startedAt)
+
+                for set in session.sets where set.isComplete && set.reps > 0 {
+                    guard let exercise = set.exercise else { continue }
+                    let exerciseID = exercise.exerciseID
+                    exerciseNames[exerciseID] = exercise.name
+
+                    let oneRM = epleyOneRM(weightKg: set.weightKg, reps: set.reps)
+                    let point = StrengthDataPoint(
+                        id: set.id,
+                        date: sessionDay,
+                        estimatedOneRMKg: oneRM,
+                        exerciseName: exercise.name
+                    )
+
+                    if var existing = pointsByExercise[exerciseID] {
+                        // Keep only the best 1RM per day to avoid clutter.
+                        if let idx = existing.firstIndex(where: {
+                            Calendar.current.isDate($0.date, inSameDayAs: sessionDay)
+                        }) {
+                            if oneRM > existing[idx].estimatedOneRMKg {
+                                existing[idx] = point
+                            }
+                        } else {
+                            existing.append(point)
+                        }
+                        pointsByExercise[exerciseID] = existing
+                    } else {
+                        pointsByExercise[exerciseID] = [point]
+                    }
+                }
+            }
+
+            // Sort each exercise's points chronologically.
+            for key in pointsByExercise.keys {
+                pointsByExercise[key]?.sort { $0.date < $1.date }
+            }
+
+            let exercises = exerciseNames.map { id, name in
+                ExerciseInfo(id: id, name: name)
+            }.sorted { $0.name < $1.name }
+
+            strengthDataPoints = pointsByExercise
+            availableExercises = exercises
+
+            // Default-select the first exercise if none selected.
+            if selectedExercise == nil || !exercises.contains(where: { $0.id == selectedExercise?.id }) {
+                selectedExercise = exercises.first
             }
         } catch {
             errorMessage = error.localizedDescription
-            return []
         }
+    }
+
+    // MARK: - Private – Helpers
+
+    /// Filters body metrics so that only entries within the selected range are returned.
+    private func filter(metrics: [BodyMetric], for range: TimeRange) -> [BodyMetric] {
+        guard let start = range.startDate else { return metrics }
+        let end = Date()
+        return metrics.filter { $0.date >= start && $0.date <= end }
+    }
+
+    /// Epley formula: `1RM = weight × (1 + reps / 30)`.
+    private func epleyOneRM(weightKg: Double, reps: Int) -> Double {
+        guard reps > 0 else { return weightKg }
+        return weightKg * (1.0 + Double(reps) / 30.0)
+    }
+
+    /// Reduces a dense array of `WeightDataPoint`s to one averaged point per ISO calendar week.
+    ///
+    /// Used for the all-time range to keep chart rendering fast (< 300 ms).
+    private func downsampleToWeeklyAverages(_ points: [WeightDataPoint]) -> [WeightDataPoint] {
+        let calendar = Calendar(identifier: .iso8601)
+        var buckets: [DateComponents: [Double]] = [:]
+
+        for point in points {
+            let components = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: point.date)
+            buckets[components, default: []].append(point.weightKg)
+        }
+
+        return buckets.compactMap { components, values -> WeightDataPoint? in
+            guard let weekStart = calendar.date(from: components) else { return nil }
+            let avg = values.reduce(0, +) / Double(values.count)
+            return WeightDataPoint(id: UUID(), date: weekStart, weightKg: avg)
+        }.sorted { $0.date < $1.date }
     }
 }
