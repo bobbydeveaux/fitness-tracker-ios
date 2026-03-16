@@ -2,74 +2,65 @@ import Foundation
 
 // MARK: - MacroTargets
 
-/// Computed macronutrient targets in grams per day.
+/// Macro nutrient targets in grams per day.
 struct MacroTargets {
-    /// Grams of protein per day.
+    let calories: Double
     let proteinG: Double
-    /// Grams of carbohydrates per day.
     let carbsG: Double
-    /// Grams of fat per day.
     let fatG: Double
 }
 
 // MARK: - MacroCalculator
 
-/// Splits a TDEE into per-macronutrient gram targets based on the user's fitness goal.
+/// Pure, framework-free struct for deriving protein, carb, and fat targets
+/// from a calorie goal and the user's fitness goal.
 ///
-/// **Energy constants:**
-/// - Protein: 4 kcal / g
-/// - Carbohydrates: 4 kcal / g
-/// - Fat: 9 kcal / g
+/// Macro ratios (as % of target calories):
+/// - maintain : protein 30%, carbs 40%, fat 30%
+/// - cut       : protein 40%, carbs 35%, fat 25%  (high protein preserves muscle in deficit)
+/// - bulk      : protein 25%, carbs 50%, fat 25%  (carb-rich surplus supports hypertrophy)
 ///
-/// **Calorie adjustments and macro splits by goal (FR-001):**
-///
-/// | Goal     | Calorie delta | Protein | Carbs | Fat |
-/// |----------|---------------|---------|-------|-----|
-/// | cut      | −300 kcal     | 40 %    | 30 %  | 30 %|
-/// | maintain |   0 kcal      | 30 %    | 40 %  | 30 %|
-/// | bulk     | +300 kcal     | 25 %    | 50 %  | 25 %|
+/// Calorie densities: protein 4 kcal/g, carbs 4 kcal/g, fat 9 kcal/g.
 struct MacroCalculator {
 
-    // MARK: - Calorie Adjustments
+    // MARK: - Macro Ratios
 
-    private static let calorieAdjustment: [FitnessGoal: Double] = [
-        .cut:      -300,
-        .maintain:    0,
-        .bulk:      +300
-    ]
+    /// Returns the (proteinRatio, carbRatio, fatRatio) tuple for a given goal.
+    /// All three ratios sum to exactly 1.0.
+    static func ratios(for goal: FitnessGoal) -> (protein: Double, carbs: Double, fat: Double) {
+        switch goal {
+        case .maintain: return (0.30, 0.40, 0.30)
+        case .cut:      return (0.40, 0.35, 0.25)
+        case .bulk:     return (0.25, 0.50, 0.25)
+        }
+    }
 
-    // MARK: - Macro Ratios (protein, carbs, fat)
+    // MARK: - Core Calculation
 
-    private static let macroRatios: [FitnessGoal: (protein: Double, carbs: Double, fat: Double)] = [
-        .cut:      (protein: 0.40, carbs: 0.30, fat: 0.30),
-        .maintain: (protein: 0.30, carbs: 0.40, fat: 0.30),
-        .bulk:     (protein: 0.25, carbs: 0.50, fat: 0.25)
-    ]
-
-    // MARK: - Energy per gram
-
-    private static let kcalPerGramProtein: Double = 4
-    private static let kcalPerGramCarbs:   Double = 4
-    private static let kcalPerGramFat:     Double = 9
-
-    // MARK: - Public API
-
-    /// Calculates per-macronutrient gram targets for the given TDEE and goal.
-    ///
+    /// Computes macro gram targets from a calorie goal and fitness goal.
     /// - Parameters:
-    ///   - tdeeKcal: The user's Total Daily Energy Expenditure in kilocalories.
-    ///   - goal: The user's fitness goal (cut / maintain / bulk).
-    /// - Returns: A `MacroTargets` value with protein, carbs, and fat in grams (rounded).
-    static func calculate(tdeeKcal: Double, goal: FitnessGoal) -> MacroTargets {
-        let adjustment = calorieAdjustment[goal] ?? 0
-        let targetKcal = tdeeKcal + adjustment
+    ///   - calories: Total target kilocalories per day (goal-adjusted TDEE).
+    ///   - goal: User's fitness goal (cut / maintain / bulk).
+    /// - Returns: `MacroTargets` with gram values rounded to one decimal place.
+    static func macros(calories: Double, goal: FitnessGoal) -> MacroTargets {
+        let (proteinRatio, carbsRatio, fatRatio) = ratios(for: goal)
+        let proteinG = (calories * proteinRatio / 4).rounded(toPlaces: 1)
+        let carbsG   = (calories * carbsRatio   / 4).rounded(toPlaces: 1)
+        let fatG     = (calories * fatRatio      / 9).rounded(toPlaces: 1)
+        return MacroTargets(
+            calories: calories,
+            proteinG: proteinG,
+            carbsG: carbsG,
+            fatG: fatG
+        )
+    }
+}
 
-        let ratios = macroRatios[goal] ?? (protein: 0.30, carbs: 0.40, fat: 0.30)
+// MARK: - Double Rounding Helper
 
-        let proteinG = (targetKcal * ratios.protein / kcalPerGramProtein).rounded()
-        let carbsG   = (targetKcal * ratios.carbs   / kcalPerGramCarbs).rounded()
-        let fatG     = (targetKcal * ratios.fat      / kcalPerGramFat).rounded()
-
-        return MacroTargets(proteinG: proteinG, carbsG: carbsG, fatG: fatG)
+private extension Double {
+    func rounded(toPlaces places: Int) -> Double {
+        let factor = pow(10.0, Double(places))
+        return (self * factor).rounded() / factor
     }
 }
