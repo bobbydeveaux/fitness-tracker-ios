@@ -1,0 +1,15 @@
+{
+  "prTitle": "feat: implement PRDetector domain logic",
+  "prBody": "## Summary\n\n- Adds `PRDetector` as a pure, framework-free domain service in `FitnessTracker/Domain/PRDetector.swift`\n- Introduces `SetRecord` value type (weightKg, reps, computed `volume = weight × reps`) and `PRResult` (isPR, previousBest, newSet)\n- `PRDetector.check(newSet:history:)` returns a PR when the new set's volume strictly exceeds the highest historical volume; empty history is always a PR (first-ever set)\n- 13 `XCTest` unit tests covering all three acceptance criteria: new PR detection, no-PR case, and empty-history edge case\n\nCloses #59",
+  "testsPass": true,
+  "filesChanged": [
+    "FitnessTracker/Domain/PRDetector.swift",
+    "FitnessTrackerTests/PRDetectorTests.swift"
+  ],
+  "docsUpdated": [],
+  "docsReviewed": [
+    "docs/concepts/ios-fitness-tracker-app/LLD.md",
+    "docs/concepts/ios-fitness-tracker-app/tasks.yaml"
+  ],
+  "completedTasks": [1]
+}

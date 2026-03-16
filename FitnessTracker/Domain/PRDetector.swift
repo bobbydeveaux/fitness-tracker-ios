@@ -1,80 +1,66 @@
 import Foundation
 
+// MARK: - SetRecord
+
+/// A lightweight, framework-free value representing a single logged exercise set.
+/// Used by `PRDetector` so callers do not need to pass SwiftData model objects.
+struct SetRecord {
+    /// Weight lifted in kilograms.
+    let weightKg: Double
+    /// Number of repetitions performed.
+    let reps: Int
+
+    /// 1RM-equivalent volume used for PR comparison: weight × reps.
+    var volume: Double { weightKg * Double(reps) }
+}
+
 // MARK: - PRResult
 
-/// The outcome of a personal-record check for a single logged set.
+/// The outcome of a PR-detection check.
 struct PRResult {
-
-    /// `true` if the new set establishes a new 1RM-equivalent personal record
-    /// for the given exercise.
+    /// Whether the evaluated set constitutes a new personal record.
     let isPR: Bool
-
-    /// The previous best 1RM-equivalent (weight × reps), or `nil` when this is
-    /// the first set ever logged for the exercise.
-    let previousBest: Double?
-
-    /// The 1RM-equivalent volume for the newly logged set (weight × reps).
-    let newBest: Double
+    /// The best historical set prior to the new set, or `nil` when no history exists.
+    let previousBest: SetRecord?
+    /// The new set that was evaluated.
+    let newSet: SetRecord
 }
 
 // MARK: - PRDetector
 
-/// Framework-free domain service that determines whether a newly logged set
-/// constitutes a personal record (PR) for a given exercise.
+/// Pure, framework-free domain service that detects personal records for a given
+/// exercise by comparing a new set's 1RM-equivalent volume (weight × reps) against
+/// the historical best.
 ///
-/// The PR metric used is **1RM-equivalent volume** (weight × reps), which
-/// provides a simple but effective proxy for absolute strength improvements
-/// across varying rep ranges.
+/// **PR rule:**
+/// A set is a PR when its `volume` (weightKg × reps) **strictly exceeds** the
+/// highest `volume` seen in `history`.  When `history` is empty (first-ever set
+/// for that exercise) the set is always considered a PR.
 ///
-/// Usage:
-/// ```swift
-/// let result = PRDetector.check(
-///     weightKg: 100,
-///     reps: 5,
-///     against: previousLoggedSets
-/// )
-/// if result.isPR {
-///     print("New PR! Previous best was \(result.previousBest ?? 0) kg·reps")
-/// }
-/// ```
-enum PRDetector {
+/// Callers convert `LoggedSet` SwiftData objects to `SetRecord` values before
+/// invoking this service, keeping the domain logic decoupled from persistence.
+struct PRDetector {
 
-    // MARK: - Public API
+    // MARK: - Check
 
-    /// Checks whether the new set is a personal record compared to the
-    /// provided historical sets for the same exercise.
-    ///
-    /// A set is a PR when its `weightKg × reps` volume strictly exceeds every
-    /// previous set's volume. The first set for an exercise is always a PR.
+    /// Evaluates whether `newSet` sets a new personal record.
     ///
     /// - Parameters:
-    ///   - weightKg: Weight lifted in the new set (kilograms).
-    ///   - reps: Repetitions performed in the new set.
-    ///   - historicalSets: All previously completed sets for the same exercise.
-    ///     Incomplete sets (`isComplete == false`) are excluded from comparison.
-    /// - Returns: A `PRResult` containing the PR flag and the previous best volume.
-    static func check(
-        weightKg: Double,
-        reps: Int,
-        against historicalSets: [LoggedSet]
-    ) -> PRResult {
-        let newVolume = weightKg * Double(reps)
-
-        // Filter to completed sets only and compute their 1RM-equivalent volumes.
-        let previousVolumes = historicalSets
-            .filter { $0.isComplete }
-            .map { $0.weightKg * Double($0.reps) }
-
-        let previousBest = previousVolumes.max()
-
-        let isPR: Bool
-        if let best = previousBest {
-            isPR = newVolume > best
-        } else {
-            // No history — first set is always a PR.
-            isPR = true
+    ///   - newSet: The set just logged by the user.
+    ///   - history: All previously completed sets for the **same exercise**, in any order.
+    ///     Pass an empty array when this is the athlete's first-ever set for the exercise.
+    /// - Returns: A `PRResult` describing whether a PR was achieved, the previous best
+    ///   (if any), and the evaluated set.
+    static func check(newSet: SetRecord, history: [SetRecord]) -> PRResult {
+        guard !history.isEmpty else {
+            // No history → first set ever for this exercise is always a PR.
+            return PRResult(isPR: true, previousBest: nil, newSet: newSet)
         }
 
-        return PRResult(isPR: isPR, previousBest: previousBest, newBest: newVolume)
+        // Identify the historical set with the highest volume.
+        let bestHistorical = history.max(by: { $0.volume < $1.volume })!
+
+        let isPR = newSet.volume > bestHistorical.volume
+        return PRResult(isPR: isPR, previousBest: bestHistorical, newSet: newSet)
     }
 }
