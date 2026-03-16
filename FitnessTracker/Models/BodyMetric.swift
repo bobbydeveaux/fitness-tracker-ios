@@ -8,6 +8,7 @@ enum BodyMetricType: String, Codable {
     case chest
     case waist
     case hips
+    case neck
     case thigh
     case arm
     case bodyFatPercentage

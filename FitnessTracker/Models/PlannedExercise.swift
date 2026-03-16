@@ -12,6 +12,8 @@ final class PlannedExercise {
     var targetSets: Int
     var targetReps: String   // e.g. "6-8" or "12"
     var targetRPE: Double?   // Rate of Perceived Exertion (6-10), optional
+    /// Display/insertion order within the workout day.
+    var sortOrder: Int
 
     // MARK: - Relationships
 
@@ -25,6 +27,7 @@ final class PlannedExercise {
         targetSets: Int,
         targetReps: String,
         targetRPE: Double? = nil,
+        sortOrder: Int = 0,
         workoutDay: WorkoutDay? = nil,
         exercise: Exercise? = nil
     ) {
@@ -32,6 +35,7 @@ final class PlannedExercise {
         self.targetSets = targetSets
         self.targetReps = targetReps
         self.targetRPE = targetRPE
+        self.sortOrder = sortOrder
         self.workoutDay = workoutDay
         self.exercise = exercise
     }

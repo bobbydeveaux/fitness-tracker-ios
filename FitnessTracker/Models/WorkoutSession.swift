@@ -5,6 +5,7 @@ import SwiftData
 
 enum SessionStatus: String, Codable {
     case active
+    case paused
     case complete
     case abandoned
 }

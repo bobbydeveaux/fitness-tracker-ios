@@ -12,7 +12,8 @@ final class Streak {
     var currentCount: Int
     var longestCount: Int
 
-    @Attribute(.indexed) var lastActivityDate: Date
+    /// Date of the most recent activity. `nil` for a brand-new user with no activity.
+    var lastActivityDate: Date?
 
     // MARK: - Relationships
 
@@ -24,7 +25,7 @@ final class Streak {
         id: UUID = UUID(),
         currentCount: Int = 0,
         longestCount: Int = 0,
-        lastActivityDate: Date = .now,
+        lastActivityDate: Date? = nil,
         userProfile: UserProfile? = nil
     ) {
         self.id = id

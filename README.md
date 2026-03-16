@@ -17,6 +17,10 @@ MVVM + Repository pattern with SwiftData for on-device persistence.
 - **Repository protocols** — abstract SwiftData access; swap real implementations for in-memory test doubles
 - **`AppEnvironment` DI container** — single `@Observable` instance injected via `.environment` at the root
 
+## Data Layer
+
+12 SwiftData models cover all domain entities. See [docs/swiftdata-models.md](docs/swiftdata-models.md) for the full schema reference including relationships, delete rules, and migration guidance.
+
 ## Project Structure
 
 ```
