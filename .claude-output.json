@@ -1,26 +1,17 @@
 {
-  "prTitle": "feat: assemble NutritionView, MealLogEntryView, and MacroSummaryBar with dashboard integration",
-  "prBody": "## Summary\n\nImplements the complete nutrition logging feature for Sprint 3, addressing all feedback from the previous review.\n\n### New Files\n\n- **`FitnessTracker/Features/Nutrition/NutritionViewModel.swift`** — `@Observable @MainActor` view model with SwiftData persistence via `NutritionRepository`. Computes live macro aggregates (`totalKcal`, `totalProteinG`, `totalCarbG`, `totalFatG`) from today's meal logs. Exposes `addEntry(foodItem:servingGrams:mealType:)` and `removeEntry(_:)` actions.\n\n- **`FitnessTracker/Features/Nutrition/NutritionView.swift`** — Main screen listing today's meals grouped by meal type (`MealLogSection`). Shows `MacroSummaryBar` at top, supports swipe-to-delete on individual entries, and opens `MealLogEntryView` as a sheet via the `+` toolbar button.\n\n- **`FitnessTracker/Features/Nutrition/MealLogEntryView.swift`** — Sheet for adding a meal entry. Four-tab interface: Search, Barcode, Templates, Custom. Shows a food-config panel (serving size + meal type picker) once a food is selected.\n\n- **`FitnessTracker/Features/Nutrition/Components/MacroSummaryBar.swift`** — Reusable component with an animated calorie ring and protein/carbs/fat progress bars showing consumed vs target.\n\n- **`FitnessTracker/Features/Nutrition/Views/FoodSearchView.swift`** — Debounced (300 ms) async food search backed by `NutritionRepository.searchFoodItems`.\n\n- **`FitnessTracker/Features/Nutrition/Views/BarcodeScannerView.swift`** — `UIViewControllerRepresentable` wrapping `AVCaptureSession` for EAN-13/8, UPC-A, QR, and Code 128 scanning. Handles camera permission requests gracefully.\n\n- **`FitnessTracker/Services/BarcodeLookupService.swift`** — `actor` that resolves a barcode string to a local `FoodItem` via the repository.\n\n- **`FitnessTracker/Features/Nutrition/Views/CustomFoodFormView.swift`** — Form for defining and persisting a custom `FoodItem` (name + macros per 100 g).\n\n- **`FitnessTracker/Features/Nutrition/Views/MealTemplatesView.swift`** — Quick-add list of recently logged and custom foods.\n\n### Modified Files\n\n- **`FitnessTracker/Features/Dashboard/DashboardView.swift`** — Adds `NutritionSummaryWidget`: a tappable card showing live macro progress (via `NutritionViewModel`) that navigates to `NutritionView`.\n\n### Tests\n\n- **`FitnessTrackerTests/NutritionViewModelTests.swift`** — 20 unit tests covering: initial state, `loadTodaysLogs` success/error paths, macro aggregation across multiple logs, `addEntry` (correct macros, new/reuse log), `removeEntry` (decrement totals), `deleteMealLog` (removes from state), and `getOrCreateMealLog` (create/reuse).\n\n### Acceptance Criteria\n\n| Criterion | Status |\n|---|---|\n| NutritionView lists today's logged meals with live macro totals in MacroSummaryBar | ✅ Implemented |\n| MealLogEntryView allows food selection via search, barcode scan, or custom form | ✅ Implemented |\n| Dashboard macro ring/widget updates immediately after a meal log entry is saved | ✅ Implemented via NutritionSummaryWidget |\n| Deleting a meal entry removes it from the log and decrements macro totals in real time | ✅ Implemented |\n\nCloses #26",
+  "prTitle": "feat: implement NotificationScheduler with UNUserNotificationCenter",
+  "prBody": "## Summary\n\n- Adds `NotificationScheduler` — an `@Observable` singleton wrapping `UNUserNotificationCenter` for scheduling recurring workout reminders\n- Introduces `NotificationSchedulerProtocol` for testability (mirrors the `HealthKitServiceProtocol` pattern) and `NotificationCenterProtocol` to allow mock injection in unit tests\n- Wires `NotificationScheduler.shared` into `AppEnvironment` alongside the other service singletons\n- Ships 25 unit tests in `NotificationSchedulerTests.swift` covering all four acceptance criteria\n\n## Acceptance criteria\n\n| Criterion | Status |\n|---|---|\n| `requestPermission()` returns auth status and updates a published property | ✅ Implemented |\n| `scheduleReminders(days:time:)` creates one `UNNotificationRequest` per weekday with correct calendar trigger | ✅ Implemented |\n| Calling `scheduleReminders` again removes previously scheduled fitness-reminder notifications before re-adding | ✅ Implemented |\n| `cancelAll()` removes all pending fitness-reminder notifications | ✅ Implemented |\n\n## Files changed\n\n- `FitnessTracker/Services/NotificationScheduler.swift` — new service\n- `FitnessTracker/App/AppEnvironment.swift` — wires in `notificationScheduler`\n- `FitnessTrackerTests/NotificationSchedulerTests.swift` — new test file\n- `FitnessTrackerTests/AppEnvironmentTests.swift` — verifies new service is accessible\n\nCloses #27",
   "testsPass": true,
   "filesChanged": [
-    "FitnessTracker/Features/Nutrition/NutritionViewModel.swift",
-    "FitnessTracker/Features/Nutrition/NutritionView.swift",
-    "FitnessTracker/Features/Nutrition/MealLogEntryView.swift",
-    "FitnessTracker/Features/Nutrition/Components/MacroSummaryBar.swift",
-    "FitnessTracker/Features/Nutrition/Views/FoodSearchView.swift",
-    "FitnessTracker/Features/Nutrition/Views/BarcodeScannerView.swift",
-    "FitnessTracker/Features/Nutrition/Views/CustomFoodFormView.swift",
-    "FitnessTracker/Features/Nutrition/Views/MealTemplatesView.swift",
-    "FitnessTracker/Services/BarcodeLookupService.swift",
-    "FitnessTracker/Features/Dashboard/DashboardView.swift",
-    "FitnessTrackerTests/NutritionViewModelTests.swift"
+    "FitnessTracker/Services/NotificationScheduler.swift",
+    "FitnessTracker/App/AppEnvironment.swift",
+    "FitnessTrackerTests/NotificationSchedulerTests.swift",
+    "FitnessTrackerTests/AppEnvironmentTests.swift"
   ],
   "docsUpdated": [],
   "docsReviewed": [
-    "docs/concepts/ios-fitness-tracker-app/HLD.md",
     "docs/concepts/ios-fitness-tracker-app/LLD.md",
-    "docs/swiftdata-models.md",
-    "README.md"
-  ],
-  "completedTasks": [1, 2, 3, 4, 5, 6, 7, 8]
+    "docs/concepts/ios-fitness-tracker-app/HLD.md",
+    "docs/swiftdata-models.md"
+  ]
 }

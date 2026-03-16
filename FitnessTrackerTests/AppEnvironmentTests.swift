@@ -54,6 +54,7 @@ final class AppEnvironmentTests: XCTestCase {
         _ = env.exerciseLibraryService
         _ = env.keychainService
         _ = env.healthKitService
+        _ = env.notificationScheduler
         XCTAssert(true, "All services accessible without crash")
     }
 }
