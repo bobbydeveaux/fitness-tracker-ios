@@ -31,7 +31,13 @@ FitnessTracker/
 │   └── RootView.swift            # Root router (onboarding ↔ dashboard)
 ├── Models/                       # SwiftData @Model classes (added in sprint 1, task 2)
 ├── Features/
-│   ├── Onboarding/               # Sprint 1 – wizard, TDEE/macro calc
+│   ├── Onboarding/               # Sprint 2 – wizard, TDEE/macro calc
+│   │   ├── OnboardingViewModel.swift   # @Observable 4-step wizard state & persistence
+│   │   └── Steps/
+│   │       ├── WelcomeStepView.swift        # Branding + CTA
+│   │       ├── BiometricsStepView.swift     # Name, age, gender, height, weight
+│   │       ├── ActivityGoalStepView.swift   # Activity level + fitness goal pickers
+│   │       └── SummaryStepView.swift        # TDEE + macro breakdown + confirm
 │   ├── Dashboard/                # Sprint 2
 │   ├── Nutrition/                # Sprint 3
 │   ├── Workout/                  # Sprint 4
@@ -55,7 +61,12 @@ FitnessTracker/
 └── Resources/                    # exercises.json, assets, PrivacyInfo.xcprivacy
 
 FitnessTrackerTests/
-└── AppEnvironmentTests.swift     # Verifies DI container wires without circular deps
+├── AppEnvironmentTests.swift     # Verifies DI container wires without circular deps
+├── AppSchemaTests.swift          # SwiftData schema migration & model tests
+├── CalculatorTests.swift         # TDEECalculator & MacroCalculator unit tests
+├── ExerciseLibraryServiceTests.swift
+├── KeychainServiceTests.swift
+└── OnboardingViewModelTests.swift # Wizard navigation, validation & TDEE/macro tests
 ```
 
 ## Dependency Injection
@@ -88,8 +99,8 @@ let env = AppEnvironment(
 
 | Sprint | Focus | Status |
 |--------|-------|--------|
-| 1 | Foundation, SwiftData schema, services | 🔄 In progress |
-| 2 | Onboarding wizard, HealthKit | ⏳ Planned |
+| 1 | Foundation, SwiftData schema, services | ✅ Done |
+| 2 | Onboarding wizard, HealthKit | 🔄 In progress |
 | 3 | Nutrition & Settings | ⏳ Planned |
 | 4 | Dashboard & Workout Planning | ⏳ Planned |
 | 5 | Session Tracking & Progress Analytics | ⏳ Planned |
