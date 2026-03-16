@@ -1,0 +1,17 @@
+{
+  "prTitle": "feat(dashboard): add WeeklySummaryCard and quick-add buttons",
+  "prBody": "## Summary\n\n- **New `WeeklySummaryCard` component** (`FitnessTracker/Features/Dashboard/WeeklySummaryCard.swift`) — a 2×2 stat grid card showing:\n  - Completed workout sessions in the trailing 7 days\n  - Average daily caloric intake over the past 7 days\n  - Today's step count (from HealthKit)\n  - Today's active energy burned (from HealthKit)\n- **Expanded `DashboardViewModel`** — now accepts `nutritionRepository` and `workoutRepository` dependencies and exposes a `WeeklyStats` model. `loadAll()` fetches HealthKit stats and weekly aggregates concurrently.\n- **Updated `DashboardView`** with `WeeklySummaryCard` and a `QuickAddStrip` providing one-tap access to Log Meal (sheet) and Log Workout (navigation).\n\nCloses #33",
+  "testsPass": true,
+  "filesChanged": [
+    "FitnessTracker/Features/Dashboard/WeeklySummaryCard.swift",
+    "FitnessTracker/Features/Dashboard/DashboardViewModel.swift",
+    "FitnessTracker/Features/Dashboard/DashboardView.swift"
+  ],
+  "docsUpdated": [],
+  "docsReviewed": [
+    "docs/swiftdata-models.md",
+    "docs/concepts/ios-fitness-tracker-app/LLD.md",
+    "README.md"
+  ],
+  "completedTasks": [1, 2, 3, 4]
+}
