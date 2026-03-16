@@ -20,15 +20,16 @@ import SwiftData
 /// ```
 /// FitnessTrackerApp
 ///   └─ AppEnvironment
-///        ├─ ModelContainer          (SwiftData, shared by all repositories)
-///        ├─ UserProfileRepository   (protocol → SwiftDataUserProfileRepository)
-///        ├─ NutritionRepository     (protocol → SwiftDataNutritionRepository)
-///        ├─ WorkoutRepository       (protocol → SwiftDataWorkoutRepository)
-///        ├─ ProgressRepository      (protocol → SwiftDataProgressRepository)
-///        ├─ ExerciseLibraryService  (in-memory JSON cache)
-///        ├─ KeychainService         (Security framework wrapper)
-///        ├─ HealthKitService        (HKHealthStore wrapper)
-///        └─ CloudSyncService        (CloudKit availability & sync-state monitor)
+///        ├─ ModelContainer              (SwiftData, shared by all repositories)
+///        ├─ UserProfileRepository       (protocol → SwiftDataUserProfileRepository)
+///        ├─ NutritionRepository         (protocol → SwiftDataNutritionRepository)
+///        ├─ WorkoutRepository           (protocol → SwiftDataWorkoutRepository)
+///        ├─ ProgressRepository          (protocol → SwiftDataProgressRepository)
+///        ├─ ExerciseLibraryService      (in-memory JSON cache)
+///        ├─ KeychainService             (Security framework wrapper)
+///        ├─ HealthKitService            (HKHealthStore wrapper)
+///        ├─ NotificationScheduler       (UNUserNotificationCenter wrapper)
+///        └─ CloudSyncService            (CloudKit availability & sync-state monitor)
 /// ```
 @Observable
 final class AppEnvironment {
@@ -65,6 +66,9 @@ final class AppEnvironment {
     /// Wraps `HKHealthStore` for HealthKit reads and workout writes.
     let healthKitService: any HealthKitServiceProtocol
 
+    /// Wraps `UNUserNotificationCenter` for scheduling workout-reminder notifications.
+    let notificationScheduler: any NotificationSchedulerProtocol
+
     /// Monitors CloudKit sync state and exposes the iCloud availability toggle.
     let cloudSyncService: any CloudSyncServiceProtocol
 
@@ -81,6 +85,7 @@ final class AppEnvironment {
     ///   - exerciseLibraryService: Service for exercise JSON management.
     ///   - keychainService: Service for Keychain access.
     ///   - healthKitService: Service for HealthKit access.
+    ///   - notificationScheduler: Service for scheduling workout-reminder notifications.
     ///   - cloudSyncService: Service for CloudKit sync monitoring and toggle.
     init(
         modelContainer: ModelContainer,
@@ -91,6 +96,7 @@ final class AppEnvironment {
         exerciseLibraryService: ExerciseLibraryService = ExerciseLibraryService(),
         keychainService: KeychainService = KeychainService(),
         healthKitService: any HealthKitServiceProtocol = HealthKitService.shared,
+        notificationScheduler: any NotificationSchedulerProtocol = NotificationScheduler.shared,
         cloudSyncService: any CloudSyncServiceProtocol = CloudSyncService()
     ) {
         self.modelContainer = modelContainer
@@ -101,6 +107,7 @@ final class AppEnvironment {
         self.exerciseLibraryService = exerciseLibraryService
         self.keychainService = keychainService
         self.healthKitService = healthKitService
+        self.notificationScheduler = notificationScheduler
         self.cloudSyncService = cloudSyncService
     }
 }
