@@ -1,31 +1,6 @@
 import Foundation
 import UserNotifications
-
-// MARK: - NotificationSchedulerProtocol
-
-/// Abstracts local-notification scheduling so callers and tests can work
-/// against a type-erased interface without depending on `UNUserNotificationCenter`.
-protocol NotificationSchedulerProtocol: AnyObject {
-
-    /// Requests notification authorisation (alert + sound + badge).
-    /// - Returns: `true` if the user granted permission, `false` otherwise.
-    func requestPermission() async -> Bool
-
-    /// Schedules daily workout-reminder notifications on the supplied weekdays
-    /// at the given time-of-day.
-    ///
-    /// Any previously scheduled reminders are cancelled before the new set is
-    /// registered so the active schedule always matches the user's preferences.
-    ///
-    /// - Parameters:
-    ///   - days: A set of `Weekday` values (e.g. `[.monday, .wednesday, .friday]`).
-    ///   - time: The `DateComponents` representing the hour and minute at which
-    ///     the notification should fire each scheduled day.
-    func scheduleReminders(days: Set<Weekday>, time: DateComponents) async
-
-    /// Cancels all pending reminder notifications scheduled by this service.
-    func cancelAll()
-}
+import Observation
 
 // MARK: - Weekday
 
@@ -68,96 +43,186 @@ enum Weekday: Int, CaseIterable, Identifiable, Codable {
     }
 }
 
+// MARK: - NotificationCenterProtocol
+
+/// Internal abstraction over `UNUserNotificationCenter` that enables injecting
+/// a test double without touching the real notification subsystem.
+protocol NotificationCenterProtocol: AnyObject {
+
+    /// Requests authorisation for the specified notification options.
+    func requestAuthorization(options: UNAuthorizationOptions) async throws -> Bool
+
+    /// Returns all notification requests currently waiting to be delivered.
+    func pendingNotificationRequests() async -> [UNNotificationRequest]
+
+    /// Cancels the pending notification requests identified by the given strings.
+    func removePendingNotificationRequests(withIdentifiers identifiers: [String])
+
+    /// Schedules a local notification request.
+    func add(_ request: UNNotificationRequest) async throws
+}
+
+extension UNUserNotificationCenter: NotificationCenterProtocol {}
+
+// MARK: - NotificationSchedulerProtocol
+
+/// Protocol that abstracts `UNUserNotificationCenter` scheduling so that
+/// callers and tests can work against a type-erased interface.
+protocol NotificationSchedulerProtocol: AnyObject {
+
+    /// The current `UNAuthorizationStatus` for the app's notifications.
+    ///
+    /// Starts as `.notDetermined`. Updated after each call to `requestPermission()`.
+    var authorizationStatus: UNAuthorizationStatus { get }
+
+    /// Requests notification permission from the user and updates `authorizationStatus`.
+    func requestPermission() async
+
+    /// Removes any previously scheduled fitness reminders and schedules one
+    /// `UNNotificationRequest` per entry in `days` at the specified `time`.
+    ///
+    /// - Parameters:
+    ///   - days: Calendar weekday values (1 = Sunday … 7 = Saturday) to receive a reminder.
+    ///   - time: `DateComponents` containing at minimum `hour` and `minute`.
+    func scheduleReminders(days: [Int], time: DateComponents) async
+
+    /// Cancels all pending notifications whose identifier begins with the
+    /// fitness-reminder prefix.
+    func cancelAll() async
+}
+
 // MARK: - NotificationScheduler
 
-/// Wraps `UNUserNotificationCenter` to schedule and cancel workout reminders.
+/// Singleton wrapping `UNUserNotificationCenter` for scheduling recurring
+/// workout-reminder notifications.
 ///
-/// All notifications share the category identifier `com.fitnessTracker.reminder`
-/// and are identified by `com.fitnessTracker.reminder.<weekdayRawValue>` so
-/// individual days can be targeted for cancellation.
+/// All scheduling operations use the `fitness-reminder-` identifier prefix so
+/// they can be targeted precisely without touching other notification categories
+/// the app may add in the future.
 ///
 /// Usage:
 /// ```swift
 /// let scheduler = NotificationScheduler.shared
-/// let granted = await scheduler.requestPermission()
-/// if granted {
-///     var time = DateComponents(); time.hour = 8; time.minute = 0
-///     await scheduler.scheduleReminders(days: [.monday, .wednesday, .friday], time: time)
-/// }
+/// await scheduler.requestPermission()
+/// await scheduler.scheduleReminders(days: [2, 4, 6], time: DateComponents(hour: 8, minute: 0))
 /// ```
+@Observable
 final class NotificationScheduler: NotificationSchedulerProtocol {
 
     // MARK: - Singleton
 
+    /// The shared application-wide instance. Prefer this over creating additional
+    /// instances — `init(center:)` is internal to allow test injection only.
     static let shared = NotificationScheduler()
+
+    // MARK: - Published State
+
+    /// The most recently resolved `UNAuthorizationStatus`.
+    ///
+    /// Starts as `.notDetermined` and is updated whenever `requestPermission()` resolves.
+    private(set) var authorizationStatus: UNAuthorizationStatus = .notDetermined
 
     // MARK: - Constants
 
-    private static let categoryIdentifier = "com.fitnessTracker.reminder"
-    private static let identifierPrefix   = "com.fitnessTracker.reminder."
+    /// Identifier prefix used for all fitness-reminder notifications.
+    ///
+    /// Each reminder request identifier is formed as `"fitness-reminder-<weekday>"`,
+    /// e.g. `"fitness-reminder-2"` for Monday.
+    static let identifierPrefix = "fitness-reminder-"
 
-    // MARK: - Properties
+    // MARK: - Private
 
-    private let center: UNUserNotificationCenter
+    private let center: any NotificationCenterProtocol
 
     // MARK: - Init
 
-    /// Designated initialiser.
-    /// - Parameter center: Defaults to `.current()`; injectable for testing.
-    init(center: UNUserNotificationCenter = .current()) {
+    /// Designated initialiser. Use `.shared` in production; inject a mock
+    /// `NotificationCenterProtocol` in unit tests.
+    init(center: any NotificationCenterProtocol = UNUserNotificationCenter.current()) {
         self.center = center
     }
 
-    // MARK: - NotificationSchedulerProtocol
+    // MARK: - Permission
 
-    func requestPermission() async -> Bool {
+    /// Requests `.alert`, `.sound`, and `.badge` authorisation from the user.
+    ///
+    /// On success the granted/denied decision is reflected in `authorizationStatus`.
+    /// If the system throws (e.g. the call is made from an unsupported context),
+    /// the error is logged and `authorizationStatus` is set to `.denied` so the
+    /// UI can surface a helpful message rather than hanging indefinitely.
+    func requestPermission() async {
         do {
             let granted = try await center.requestAuthorization(options: [.alert, .sound, .badge])
-            return granted
+            authorizationStatus = granted ? .authorized : .denied
         } catch {
             print("[NotificationScheduler] Authorization error: \(error.localizedDescription)")
-            return false
+            authorizationStatus = .denied
         }
     }
 
-    func scheduleReminders(days: Set<Weekday>, time: DateComponents) async {
-        cancelAll()
+    // MARK: - Scheduling
 
-        guard !days.isEmpty else { return }
+    /// Removes all existing fitness-reminder requests, then creates one repeating
+    /// `UNCalendarNotificationTrigger` per entry in `days`.
+    ///
+    /// Calling this method a second time safely replaces any previously scheduled
+    /// set of reminders — old requests are removed before new ones are added.
+    ///
+    /// - Parameters:
+    ///   - days: Calendar weekday numbers in the range 1–7 (1 = Sunday).
+    ///   - time: `DateComponents` specifying `hour` and `minute` for the daily trigger.
+    func scheduleReminders(days: [Int], time: DateComponents) async {
+        // Remove existing fitness-reminder notifications first.
+        let pending = await center.pendingNotificationRequests()
+        let existingIDs = pending
+            .map(\.identifier)
+            .filter { $0.hasPrefix(Self.identifierPrefix) }
+        center.removePendingNotificationRequests(withIdentifiers: existingIDs)
 
+        // Schedule one repeating request per requested weekday.
         for day in days {
-            var trigger = DateComponents()
-            trigger.hour = time.hour
-            trigger.minute = time.minute
-            trigger.weekday = day.rawValue
+            var triggerComponents = DateComponents()
+            triggerComponents.hour = time.hour
+            triggerComponents.minute = time.minute
+            triggerComponents.weekday = day
 
-            let content = UNMutableNotificationContent()
-            content.title = "Time to Work Out!"
-            content.body  = "Your \(day.fullLabel) workout is waiting for you 💪"
-            content.sound = .default
-            content.categoryIdentifier = Self.categoryIdentifier
-
-            let triggerValue = UNCalendarNotificationTrigger(
-                dateMatching: trigger,
+            let trigger = UNCalendarNotificationTrigger(
+                dateMatching: triggerComponents,
                 repeats: true
             )
 
+            let content = UNMutableNotificationContent()
+            content.title = "Fitness Reminder"
+            content.body = "Time for your workout. Keep the streak alive!"
+            content.sound = .default
+
+            let identifier = "\(Self.identifierPrefix)\(day)"
             let request = UNNotificationRequest(
-                identifier: Self.identifierPrefix + String(day.rawValue),
+                identifier: identifier,
                 content: content,
-                trigger: triggerValue
+                trigger: trigger
             )
 
             do {
                 try await center.add(request)
             } catch {
-                print("[NotificationScheduler] Failed to schedule \(day.fullLabel): \(error.localizedDescription)")
+                print("[NotificationScheduler] Failed to schedule reminder for weekday \(day): \(error.localizedDescription)")
             }
         }
     }
 
-    func cancelAll() {
-        let identifiers = Weekday.allCases.map { Self.identifierPrefix + String($0.rawValue) }
-        center.removePendingNotificationRequests(withIdentifiers: identifiers)
+    // MARK: - Cancellation
+
+    /// Removes all pending notifications whose identifier begins with
+    /// `"fitness-reminder-"`.
+    ///
+    /// This leaves any non-fitness notifications from other parts of the app
+    /// (e.g. meal-log reminders) untouched.
+    func cancelAll() async {
+        let pending = await center.pendingNotificationRequests()
+        let fitnessIDs = pending
+            .map(\.identifier)
+            .filter { $0.hasPrefix(Self.identifierPrefix) }
+        center.removePendingNotificationRequests(withIdentifiers: fitnessIDs)
     }
 }

@@ -160,10 +160,10 @@ final class SettingsViewModel {
         if notificationsEnabled {
             Task { [weak self] in
                 guard let self else { return }
-                let granted = await self.notificationScheduler.requestPermission()
-                if granted {
+                await self.notificationScheduler.requestPermission()
+                if self.notificationScheduler.authorizationStatus == .authorized {
                     await self.notificationScheduler.scheduleReminders(
-                        days: self.reminderDays,
+                        days: Array(self.reminderDays.map(\.rawValue)),
                         time: self.reminderTime
                     )
                 } else {
@@ -172,7 +172,9 @@ final class SettingsViewModel {
                 }
             }
         } else {
-            notificationScheduler.cancelAll()
+            Task { [weak self] in
+                await self?.notificationScheduler.cancelAll()
+            }
         }
     }
 
@@ -182,7 +184,7 @@ final class SettingsViewModel {
         Task { [weak self] in
             guard let self else { return }
             await self.notificationScheduler.scheduleReminders(
-                days: self.reminderDays,
+                days: Array(self.reminderDays.map(\.rawValue)),
                 time: self.reminderTime
             )
         }

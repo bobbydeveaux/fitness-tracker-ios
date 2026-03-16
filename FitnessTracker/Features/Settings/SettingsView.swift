@@ -135,6 +135,10 @@ private extension AppearanceMode {
 
 private final class PreviewCloudSyncService: CloudSyncServiceProtocol {
     private(set) var syncState: CloudSyncState
+    var iCloudAvailable: Bool { true }
+    var isSyncEnabled: Bool { false }
     init(state: CloudSyncState) { syncState = state }
     func checkAvailability() async { /* no-op in preview */ }
+    func enableSync() {}
+    func disableSync() {}
 }

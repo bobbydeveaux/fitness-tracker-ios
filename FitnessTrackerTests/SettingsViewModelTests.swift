@@ -8,23 +8,28 @@ final class MockNotificationScheduler: NotificationSchedulerProtocol, @unchecked
     private(set) var scheduleCallCount = 0
     private(set) var cancelAllCallCount = 0
 
-    private(set) var lastScheduledDays: Set<Weekday> = []
+    private(set) var lastScheduledDays: [Int] = []
     private(set) var lastScheduledTime: DateComponents = DateComponents()
 
+    /// Pre-configure to simulate the system granting or denying permission.
     var permissionGranted: Bool = true
 
-    func requestPermission() async -> Bool {
+    // MARK: - NotificationSchedulerProtocol
+
+    var authorizationStatus: UNAuthorizationStatus = .notDetermined
+
+    func requestPermission() async {
         requestPermissionCallCount += 1
-        return permissionGranted
+        authorizationStatus = permissionGranted ? .authorized : .denied
     }
 
-    func scheduleReminders(days: Set<Weekday>, time: DateComponents) async {
+    func scheduleReminders(days: [Int], time: DateComponents) async {
         scheduleCallCount += 1
         lastScheduledDays = days
         lastScheduledTime = time
     }
 
-    func cancelAll() {
+    func cancelAll() async {
         cancelAllCallCount += 1
     }
 }
@@ -34,10 +39,15 @@ final class MockNotificationScheduler: NotificationSchedulerProtocol, @unchecked
 final class MockCloudSyncService: CloudSyncServiceProtocol, @unchecked Sendable {
     private(set) var checkAvailabilityCallCount = 0
     var syncState: CloudSyncState = .synced
+    var iCloudAvailable: Bool = true
+    var isSyncEnabled: Bool = false
 
     func checkAvailability() async {
         checkAvailabilityCallCount += 1
     }
+
+    func enableSync() {}
+    func disableSync() {}
 }
 
 // MARK: - SettingsViewModelTests
@@ -155,7 +165,7 @@ final class SettingsViewModelTests: XCTestCase {
         XCTAssertEqual(scheduler.scheduleCallCount, 0)
     }
 
-    func testDisablingNotifications_cancelsAll() {
+    func testDisablingNotifications_cancelsAll() async {
         let scheduler = MockNotificationScheduler()
         let (vm, _, _) = makeViewModel(scheduler: scheduler)
 
@@ -163,6 +173,9 @@ final class SettingsViewModelTests: XCTestCase {
         vm.notificationsEnabled = true
         // Then disable immediately
         vm.notificationsEnabled = false
+
+        await Task.yield()
+        try? await Task.sleep(nanoseconds: 50_000_000)
 
         XCTAssertGreaterThanOrEqual(scheduler.cancelAllCallCount, 1)
     }
@@ -178,7 +191,8 @@ final class SettingsViewModelTests: XCTestCase {
         await Task.yield()
         try? await Task.sleep(nanoseconds: 50_000_000)
 
-        XCTAssertEqual(scheduler.lastScheduledDays, [.tuesday, .thursday])
+        // tuesday.rawValue = 3, thursday.rawValue = 5
+        XCTAssertEqual(Set(scheduler.lastScheduledDays), Set([Weekday.tuesday.rawValue, Weekday.thursday.rawValue]))
     }
 
     // MARK: - Notification Persistence

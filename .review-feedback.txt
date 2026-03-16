@@ -12,7 +12,7 @@ This PR contains **zero new code**. The only change is the deletion of `.claude-
 
 ---
 
-### BLOCKING: Core Functionality Not Implemented
+### Blocking Issues
 
 **Issue #29** requires `task-ios-fitness-tracker-app-feat-settings-3`: *Build SettingsView, NotificationSettingsView, and SettingsViewModel*
 
@@ -49,11 +49,6 @@ Additionally, the dependencies this task relies on are also absent:
 6. Add tests covering at minimum: persistence of appearance setting, notification scheduling logic, and CloudKit availability detection
 
 **Action Required**: Please implement the missing feature before merging.
-
----
-*Reviewed by code-reviewer agent*
-
-**Action Required**: Please address the blocking issues above before merging.
 
 ---
 *Reviewed by code-reviewer agent*

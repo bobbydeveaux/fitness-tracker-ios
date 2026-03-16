@@ -47,7 +47,8 @@ FitnessTracker/
 ├── Services/
 │   ├── ExerciseLibraryService.swift  # Decodes & caches bundled exercises.json
 │   ├── KeychainService.swift         # Security framework wrapper
-│   └── HealthKitService.swift        # HKHealthStore reads/writes
+│   ├── HealthKitService.swift        # HKHealthStore reads/writes
+│   └── CloudSyncService.swift        # CloudKit availability detection & sync-state monitor
 ├── Repositories/
 │   ├── Protocols/                # Repository protocol definitions
 │   │   ├── UserProfileRepository.swift
@@ -66,6 +67,7 @@ FitnessTrackerTests/
 ├── AppEnvironmentTests.swift         # Verifies DI container wires without circular deps
 ├── AppSchemaTests.swift              # SwiftData schema and migration tests
 ├── CalculatorTests.swift             # TDEECalculator and MacroCalculator unit tests
+├── CloudSyncServiceTests.swift       # CloudSyncService state, toggle, and mock protocol tests
 ├── ExerciseLibraryServiceTests.swift # Exercise seeding and filtering tests
 ├── KeychainServiceTests.swift        # Keychain read/write tests
 └── OnboardingViewModelTests.swift    # Onboarding wizard state machine and persistence tests
