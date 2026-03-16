@@ -62,7 +62,7 @@ final class AppEnvironment {
     let keychainService: KeychainService
 
     /// Wraps `HKHealthStore` for HealthKit reads and workout writes.
-    let healthKitService: HealthKitService
+    let healthKitService: any HealthKitServiceProtocol
 
     // MARK: - Init
 
@@ -85,7 +85,7 @@ final class AppEnvironment {
         progressRepository: any ProgressRepository,
         exerciseLibraryService: ExerciseLibraryService = ExerciseLibraryService(),
         keychainService: KeychainService = KeychainService(),
-        healthKitService: HealthKitService = HealthKitService()
+        healthKitService: any HealthKitServiceProtocol = HealthKitService.shared
     ) {
         self.modelContainer = modelContainer
         self.userProfileRepository = userProfileRepository
