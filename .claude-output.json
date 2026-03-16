@@ -1,0 +1,16 @@
+{
+  "prTitle": "feat: implement NutritionViewModel with SwiftData persistence and macro aggregation",
+  "prBody": "## Summary\n\n- Adds `NutritionViewModel` (`@Observable @MainActor`) as the core of the Nutrition feature module\n- Exposes real-time daily macro totals (kcal, protein, carbs, fat) computed from `MealEntry` records fetched via `NutritionRepository`\n- Loads per-macro targets from `UserProfile` (tdeeKcal, proteinTargetG, carbTargetG, fatTargetG) so dashboard rings can always reflect the user's goal\n- Provides `kcalProgress`, `proteinProgress`, `carbProgress`, `fatProgress` fraction helpers (0–1, clamped) ready for `ProgressRingView`\n- Full CRUD: `load()`, `addEntry(_:toMealType:)`, `removeEntry(_:)`, `deleteMealLog(_:)` — all backed by async/throws repository calls with `errorMessage` surfacing\n- `selectedDate` property allows date navigation; `load()` re-fetches logs for the active day\n- `NutritionViewModelTests.swift` covers 30+ test cases using `MockNutritionRepository` and `MockProfileRepository`: initial state, load/error paths, macro aggregation, progress fractions, date filtering, add/remove entry, and double-add guard behaviour\n\nCloses #22",
+  "testsPass": true,
+  "filesChanged": [
+    "FitnessTracker/Features/Nutrition/NutritionViewModel.swift",
+    "FitnessTrackerTests/NutritionViewModelTests.swift"
+  ],
+  "docsUpdated": [],
+  "docsReviewed": [
+    "docs/concepts/ios-fitness-tracker-app/LLD.md",
+    "docs/concepts/ios-fitness-tracker-app/HLD.md",
+    "docs/swiftdata-models.md"
+  ],
+  "completedTasks": [1]
+}
