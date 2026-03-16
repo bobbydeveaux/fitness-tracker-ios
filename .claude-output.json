@@ -1,0 +1,17 @@
+{
+  "prTitle": "feat: add ProgressRingView and StreakBannerView dashboard components",
+  "prBody": "## Summary\n\n- **ProgressRingView** (`FitnessTracker/Features/Dashboard/Components/ProgressRingView.swift`): reusable animated circular progress ring. Accepts `progress` (0–1, clamped at both ends), `color`, `title`, `value`, and `unit`. Animates from 0 to target on appear with `withAnimation(.easeInOut(duration: 0.8))`; re-animates smoothly when the data source updates. Two Xcode Previews included (normal data, clamped edge cases).\n\n- **StreakBannerView** (`FitnessTracker/Features/Dashboard/Components/StreakBannerView.swift`): banner displaying the user's consecutive-day streak with a flame SF Symbol icon and a best-streak secondary stat. Hidden (the view emits nothing) when `currentStreak == 0`. Slides in from the top with a spring animation on first appear. Adds milestone badges at 7 / 14 / 30 day thresholds (Week+, On fire!, Legend). Two Xcode Previews included (active streaks, zero-streak hidden state).\n\n### Acceptance criteria met\n- ProgressRingView animates from 0 to target via `withAnimation` on appear ✓\n- Ring clamps progress values outside 0–1 ✓\n- StreakBannerView displays streak count and is hidden when streak is 0 ✓\n- Both components render correctly in Xcode Previews with sample data ✓\n\nCloses #32",
+  "testsPass": true,
+  "filesChanged": [
+    "FitnessTracker/Features/Dashboard/Components/ProgressRingView.swift",
+    "FitnessTracker/Features/Dashboard/Components/StreakBannerView.swift"
+  ],
+  "docsUpdated": [],
+  "docsReviewed": [
+    "docs/concepts/ios-fitness-tracker-app/HLD.md",
+    "docs/concepts/ios-fitness-tracker-app/LLD.md",
+    "docs/concepts/ios-fitness-tracker-app/epic.yaml",
+    "docs/concepts/ios-fitness-tracker-app/tasks.yaml"
+  ],
+  "completedTasks": [1, 2, 3]
+}
