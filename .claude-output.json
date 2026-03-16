@@ -1,19 +1,18 @@
 {
-  "prTitle": "feat: build CustomFoodFormView and MealTemplatesView",
-  "prBody": "## Summary\n\n- **`CustomFoodFormView`** — validated SwiftUI form for creating user-defined `FoodItem` records. All required fields (name, calories/100g, protein, carbs, fat) are validated before the Save button is enabled; the item is persisted via `NutritionRepository.saveFoodItem` with `isCustom: true` so it surfaces in food search results alongside bundled foods.\n- **`MealTemplatesView`** — lists saved `MealTemplate` records (newest first) with swipe-to-delete; tapping a template adds all its `MealTemplateItem` entries to the supplied `MealLog` via `NutritionRepository.addMealEntry`; a "Save Current Meal" toolbar button opens a sheet to persist the current meal log as a named template.\n- **`MealTemplate` / `MealTemplateItem` models** — two new `@Model` classes registered in `AppSchemaV1`; `MealTemplate` cascade-deletes its `MealTemplateItem` children.\n- **`MealTemplateTests`** — covers insert/fetch, cascade delete, schema registration, and the `isCustom` flag on user-created foods.\n\nCloses #25",
+  "prTitle": "feat: implement CloudSyncService with CloudKit monitoring and error surfacing",
+  "prBody": "## Summary\n\n- Implements `CloudSyncState` enum (`idle`, `syncing`, `error(String)`) for UI consumption\n- Implements `CloudSyncServiceProtocol` for testability without a live iCloud account\n- Implements `CloudSyncService` (`@Observable`) that:\n  - Exposes `iCloudAvailable` via `FileManager.ubiquityIdentityToken`\n  - Persists the iCloud sync opt-in preference to `UserDefaults`\n  - Monitors `NSPersistentCloudKitContainer.eventChangedNotification` and transitions `syncState`\n  - Maps `CKError` codes to user-readable strings (notAuthenticated, networkUnavailable, quotaExceeded, etc.)\n- Integrates `CloudSyncService` into `AppEnvironment` as the production default\n- Adds comprehensive unit tests (`CloudSyncStateTests`, `CloudSyncServiceTests`, `MockCloudSyncServiceTests`)\n\nCloses #28",
   "testsPass": true,
   "filesChanged": [
-    "FitnessTracker/Models/MealTemplate.swift",
-    "FitnessTracker/Models/MealTemplateItem.swift",
-    "FitnessTracker/Models/AppSchema.swift",
-    "FitnessTracker/Features/Nutrition/CustomFoodFormView.swift",
-    "FitnessTracker/Features/Nutrition/MealTemplatesView.swift",
-    "FitnessTrackerTests/MealTemplateTests.swift"
+    "FitnessTracker/Services/CloudSyncService.swift",
+    "FitnessTracker/App/AppEnvironment.swift",
+    "FitnessTrackerTests/CloudSyncServiceTests.swift"
   ],
   "docsUpdated": [],
   "docsReviewed": [
+    "docs/concepts/ios-fitness-tracker-app/HLD.md",
+    "docs/concepts/ios-fitness-tracker-app/LLD.md",
     "docs/swiftdata-models.md",
-    "docs/concepts/ios-fitness-tracker-app/LLD.md"
+    "README.md"
   ],
   "completedTasks": [1, 2, 3, 4]
 }
