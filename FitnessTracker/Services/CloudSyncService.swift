@@ -1,6 +1,7 @@
 import Foundation
 import CloudKit
 import CoreData
+import Observation
 
 // MARK: - CloudSyncState
 
@@ -9,12 +10,16 @@ import CoreData
 /// Designed to be consumed directly by SwiftUI views:
 /// - `.idle`    — no sync in progress; all is well
 /// - `.syncing` — a CloudKit import/export/setup operation is in flight
+/// - `.synced`  — the last availability check confirmed iCloud is accessible
 /// - `.error`   — the last sync attempt ended with a failure; the associated
 ///                `String` is a user-readable sentence suitable for display in a banner
+/// - `.unknown` — the status has not yet been determined (initial state before first check)
 enum CloudSyncState: Equatable {
     case idle
     case syncing
+    case synced
     case error(String)
+    case unknown
 }
 
 // MARK: - CloudSyncServiceProtocol
@@ -34,23 +39,24 @@ protocol CloudSyncServiceProtocol: AnyObject {
     /// Persisted in `UserDefaults` so the preference survives termination.
     var isSyncEnabled: Bool { get }
 
-    /// The current CloudKit sync state. Starts as `.idle` and transitions based
-    /// on `NSPersistentCloudKitContainer` event notifications.
+    /// The current CloudKit sync state.
     var syncState: CloudSyncState { get }
+
+    /// Checks iCloud availability and updates `syncState` to `.synced` or `.error`.
+    ///
+    /// This lightweight check uses `FileManager.ubiquityIdentityToken` and does
+    /// not perform a network round-trip.
+    func checkAvailability() async
 
     /// Opts the user in to iCloud sync.
     ///
-    /// Records the preference to `UserDefaults`. The caller is responsible for
-    /// rebuilding the `ModelContainer` with CloudKit enabled on the next app
-    /// launch (or immediately if live container swapping is supported).
-    ///
-    /// - Note: This method is a no-op when `iCloudAvailable` is `false`.
+    /// Records the preference to `UserDefaults`. This method is a no-op when
+    /// `iCloudAvailable` is `false`.
     func enableSync()
 
     /// Opts the user out of iCloud sync.
     ///
-    /// Clears the preference from `UserDefaults` and resets `syncState` to
-    /// `.idle`. Container changes take effect on the next app launch.
+    /// Clears the preference from `UserDefaults` and resets `syncState` to `.idle`.
     func disableSync()
 }
 
@@ -60,22 +66,24 @@ protocol CloudSyncServiceProtocol: AnyObject {
 ///
 /// This service has two responsibilities:
 /// 1. **Availability detection** — exposes `iCloudAvailable` using the
-///    lightweight `FileManager.ubiquityIdentityToken` check.
+///    lightweight `FileManager.ubiquityIdentityToken` check and `checkAvailability()`
+///    for an explicit status update.
 /// 2. **Event monitoring** — listens for `NSPersistentCloudKitContainer.
 ///    eventChangedNotification` and maps the result to a `CloudSyncState`,
 ///    surfacing human-readable error messages for `CKError` codes.
 ///
 /// Usage:
 /// ```swift
-/// let service = CloudSyncService()
-/// service.enableSync()
-/// // Later, observe `service.syncState` in a SwiftUI view.
+/// let service = CloudSyncService.shared
+/// await service.checkAvailability()
+/// // Observe service.syncState in a SwiftUI view.
 /// ```
-///
-/// The production instance is created in `AppEnvironment.makeProductionEnvironment()`
-/// and injected via the SwiftUI environment.
 @Observable
 final class CloudSyncService: CloudSyncServiceProtocol {
+
+    // MARK: - Singleton
+
+    static let shared = CloudSyncService()
 
     // MARK: - Public State
 
@@ -83,7 +91,7 @@ final class CloudSyncService: CloudSyncServiceProtocol {
     private(set) var isSyncEnabled: Bool
 
     /// The current CloudKit sync state for UI consumption.
-    private(set) var syncState: CloudSyncState = .idle
+    private(set) var syncState: CloudSyncState = .unknown
 
     // MARK: - iCloud Availability
 
@@ -119,7 +127,20 @@ final class CloudSyncService: CloudSyncServiceProtocol {
         }
     }
 
-    // MARK: - Public Methods
+    // MARK: - CloudSyncServiceProtocol
+
+    /// Checks iCloud availability and updates `syncState` accordingly.
+    ///
+    /// Sets `syncState` to `.synced` when an iCloud account is signed in,
+    /// or `.error` with a descriptive message when the user is signed out
+    /// or iCloud Drive is disabled.
+    func checkAvailability() async {
+        if iCloudAvailable {
+            syncState = .synced
+        } else {
+            syncState = .error("Sign in to iCloud in Settings to enable sync.")
+        }
+    }
 
     /// Enables iCloud sync, persisting the choice to `UserDefaults`.
     ///
@@ -143,10 +164,6 @@ final class CloudSyncService: CloudSyncServiceProtocol {
 
     /// Subscribes to `NSPersistentCloudKitContainer.eventChangedNotification`
     /// on the main queue so state updates are published on the main actor.
-    ///
-    /// The notification is posted by `NSPersistentCloudKitContainer` (used under
-    /// the hood by SwiftData's CloudKit integration) for every import, export,
-    /// and setup operation.
     private func startMonitoringCloudKitEvents() {
         notificationObserver = NotificationCenter.default.addObserver(
             forName: NSPersistentCloudKitContainer.eventChangedNotification,
@@ -179,9 +196,6 @@ final class CloudSyncService: CloudSyncServiceProtocol {
     // MARK: - Private: Error Mapping
 
     /// Maps a raw sync error into a sentence a non-technical user can act on.
-    ///
-    /// `CKError` codes that have clear remediation steps get specific messages;
-    /// all other errors fall back to the system's `localizedDescription`.
     private func userReadableMessage(for error: Error) -> String {
         guard let ckError = error as? CKError else {
             return "iCloud sync failed: \(error.localizedDescription)"
